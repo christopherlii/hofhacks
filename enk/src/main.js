@@ -25,8 +25,8 @@ const previousScreens = {};
 // Track per-screen last sent text to avoid sending duplicate content
 const previousTexts = {};
 
-// Track active alert timeout so we don't flicker
-let alertTimeout = null;
+// Track active threat state — stays true until screen changes to something safe
+let activeThreat = false;
 
 // ─── Privacy scrubbing ───────────────────────────────────────────
 function scrubSensitiveData(text) {
@@ -262,9 +262,18 @@ async function analyzeLoop() {
         continue;
       }
 
-      // Skip if the text is nearly identical to what we last sent for this screen
+      // Check text similarity to last send
       const prevText = previousTexts[screenCapture.id];
       const similarity = textSimilarity(scrubbedText, prevText);
+
+      // If text is nearly identical and there's an active threat, keep showing it
+      if (similarity > 0.85 && activeThreat) {
+        console.log(`[Enk] Text unchanged, threat still active — keeping alert`);
+        threatFound = true;
+        continue;
+      }
+
+      // If text is nearly identical and no threat, skip the API call
       if (similarity > 0.85) {
         console.log(`[Enk] Text ${(similarity * 100).toFixed(0)}% similar to last send, skipping API call`);
         continue;
@@ -283,8 +292,15 @@ async function analyzeLoop() {
     }
 
     if (threatFound) {
+      activeThreat = true;
       updateStatus('threat');
     } else {
+      // Only dismiss if there was a previous threat that is now cleared
+      if (activeThreat) {
+        console.log('[Enk] Threat cleared — dismissing alert');
+        dismissAlert();
+      }
+      activeThreat = false;
       updateStatus('active');
     }
   } catch (err) {
@@ -305,22 +321,15 @@ function showScamAlert(data) {
     notification.show();
   }
 
-  if (alertTimeout) {
-    clearTimeout(alertTimeout);
-    alertTimeout = null;
-  }
-
   if (overlayWindow && !overlayWindow.isDestroyed()) {
     overlayWindow.webContents.send('show-alert', data);
     overlayWindow.showInactive();
+  }
+}
 
-    alertTimeout = setTimeout(() => {
-      if (overlayWindow && !overlayWindow.isDestroyed()) {
-        overlayWindow.webContents.send('hide-alert');
-      }
-      updateStatus('active');
-      alertTimeout = null;
-    }, 15000);
+function dismissAlert() {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('hide-alert');
   }
 }
 
@@ -367,15 +376,16 @@ function createMainWindow() {
   mainWindow.loadFile(path.join(__dirname, 'ui', 'indicator.html'));
   mainWindow.setIgnoreMouseEvents(true, { forward: true });
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  mainWindow.setContentProtection(true); // Exclude from screen capture
 }
 
 function createOverlayWindow() {
   const { width } = screen.getPrimaryDisplay().workAreaSize;
   overlayWindow = new BrowserWindow({
-    width: width,
+    width: 520,
     height: 100,
-    x: 0,
-    y: 0,
+    x: width - 520 - 12,
+    y: 12,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -393,6 +403,18 @@ function createOverlayWindow() {
   overlayWindow.loadFile(path.join(__dirname, 'ui', 'overlay.html'));
   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
   overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // Listen for mouse enter/leave on clickable areas to toggle click-through
+  ipcMain.on('overlay-mouse-enter', () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.setIgnoreMouseEvents(false);
+    }
+  });
+  ipcMain.on('overlay-mouse-leave', () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+    }
+  });
+  overlayWindow.setContentProtection(true); // Exclude from screen capture
   overlayWindow.showInactive();
 }
 
@@ -438,6 +460,12 @@ ipcMain.handle('save-settings', (_, settings) => {
 
 ipcMain.handle('get-api-key', () => store.get('apiKey'));
 ipcMain.on('open-settings', () => createSettingsWindow());
+ipcMain.on('resize-overlay', (_, height) => {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    const bounds = overlayWindow.getBounds();
+    overlayWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: Math.max(100, height) });
+  }
+});
 
 // ─── App lifecycle ───────────────────────────────────────────────
 app.whenReady().then(async () => {

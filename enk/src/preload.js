@@ -11,5 +11,8 @@ contextBridge.exposeInMainWorld('enk', {
   dismissAlert: () => ipcRenderer.send('dismiss-alert'),
   onStatusUpdate: (callback) => ipcRenderer.on('status-update', (_, status) => callback(status)),
   onShowAlert: (callback) => ipcRenderer.on('show-alert', (_, data) => callback(data)),
-  onHideAlert: (callback) => ipcRenderer.on('hide-alert', () => callback())
+  onHideAlert: (callback) => ipcRenderer.on('hide-alert', () => callback()),
+  resizeOverlay: (height) => ipcRenderer.send('resize-overlay', height),
+  overlayMouseEnter: () => ipcRenderer.send('overlay-mouse-enter'),
+  overlayMouseLeave: () => ipcRenderer.send('overlay-mouse-leave')
 });
