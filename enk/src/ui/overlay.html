@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+    }
+    .banner {
+      display: none;
+      width: 100%;
+      padding: 16px 24px;
+      background: rgba(220, 38, 38, 0.95);
+      backdrop-filter: blur(8px);
+      color: white;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 3px solid #991b1b;
+    }
+    .banner.visible {
+      display: flex;
+      animation: slideDown 0.3s ease-out;
+    }
+    .banner-icon { font-size: 28px; flex-shrink: 0; }
+    .banner-content { flex: 1; }
+    .banner-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .banner-reason {
+      font-size: 14px;
+      opacity: 0.95;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
+    }
+    .banner-risk {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .risk-high { background: #450a0a; }
+    .risk-medium { background: #78350f; }
+    .risk-low { background: #365314; }
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner" id="banner">
+    <span class="banner-icon">⚠️</span>
+    <div class="banner-content">
+      <div class="banner-title">Possible Scam Detected</div>
+      <div class="banner-reason" id="reason"></div>
+    </div>
+    <span class="banner-risk" id="riskBadge">HIGH</span>
+  </div>
+  <script>
+    const banner = document.getElementById('banner');
+    const reason = document.getElementById('reason');
+    const riskBadge = document.getElementById('riskBadge');
+
+    window.enk.onShowAlert((data) => {
+      reason.textContent = data.reason;
+      riskBadge.textContent = data.risk_level.toUpperCase();
+      riskBadge.className = 'banner-risk risk-' + data.risk_level;
+      banner.classList.add('visible');
+    });
+
+    window.enk.onHideAlert(() => {
+      banner.classList.remove('visible');
+    });
+  </script>
+</body>
+</html>

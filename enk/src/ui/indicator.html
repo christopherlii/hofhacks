@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; }
+    body {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      user-select: none;
+    }
+    .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #4ade80;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+    .dot.active {
+      background: #4ade80;
+      box-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
+    }
+    .dot.processing {
+      background: #facc15;
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.8);
+      animation: pulse 1s infinite;
+    }
+    .dot.threat {
+      background: #ef4444;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.9);
+      animation: pulse 0.5s infinite;
+    }
+    .dot.inactive {
+      background: #6b7280;
+      box-shadow: 0 0 4px rgba(107, 114, 128, 0.4);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.15); }
+    }
+  </style>
+</head>
+<body>
+  <div class="dot active" id="statusDot"></div>
+  <script>
+    const dot = document.getElementById('statusDot');
+
+    window.enk.onStatusUpdate((status) => {
+      dot.className = 'dot ' + status;
+    });
+  </script>
+</body>
+</html>

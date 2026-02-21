@@ -1,0 +1,21 @@
+{
+  "name": "enk",
+  "version": "1.0.0",
+  "description": "Screen monitoring app that detects scams and dangerous situations",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "electron": "^40.6.0",
+    "electron-store": "^11.0.2",
+    "jimp": "^1.6.0",
+    "tesseract.js": "^7.0.0"
+  }
+}

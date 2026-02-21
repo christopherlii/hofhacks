@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 32px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #f8fafc;
+    }
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 32px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .privacy-notice {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 28px;
+      display: none;
+    }
+    .privacy-notice.visible { display: block; }
+    .privacy-notice h3 {
+      color: #38bdf8;
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+    .privacy-notice ul {
+      list-style: none;
+      padding: 0;
+    }
+    .privacy-notice li {
+      padding: 4px 0;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    .privacy-notice li::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .privacy-notice li.good::before { background: #4ade80; }
+    .privacy-notice li.bad::before { background: #ef4444; }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f8fafc;
+      font-size: 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: #38bdf8;
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1e293b;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    .toggle-label {
+      font-size: 15px;
+      color: #e2e8f0;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      cursor: pointer;
+    }
+    .toggle input { display: none; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #475569;
+      border-radius: 13px;
+      transition: background 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s;
+    }
+    .toggle input:checked + .toggle-slider {
+      background: #4ade80;
+    }
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(22px);
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .btn:hover { background: #2563eb; }
+    .btn:active { background: #1d4ed8; }
+    .status-msg {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #4ade80;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .status-msg.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <h1>Enk Settings</h1>
+  <p class="subtitle">Real-time scam detection powered by AI. Monitors your screen and alerts you to potential threats.</p>
+
+  <div class="privacy-notice visible" id="privacyNotice">
+    <h3>Privacy &amp; Data Notice</h3>
+    <ul>
+      <li class="good">OCR runs 100% locally on your device using Tesseract.js</li>
+      <li class="good">Credit card numbers, SSNs, and passwords are scrubbed before any API call</li>
+      <li class="good">Screenshots are never saved to disk or logged</li>
+      <li class="good">Only scrubbed text is sent to Claude for analysis</li>
+      <li class="bad">Scrubbed screen text is sent to Anthropic's API for scam detection</li>
+      <li class="bad">If OCR confidence is low, a screenshot may be sent to the API</li>
+    </ul>
+  </div>
+
+  <div class="form-group">
+    <label>Anthropic API Key</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="form-group">
+    <div class="toggle-container">
+      <span class="toggle-label">Monitoring Active</span>
+      <label class="toggle">
+        <input type="checkbox" id="enabled" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn" id="saveBtn">Save Settings</button>
+  <div class="status-msg" id="statusMsg">Settings saved!</div>
+
+  <script>
+    const apiKeyInput = document.getElementById('apiKey');
+    const enabledToggle = document.getElementById('enabled');
+    const saveBtn = document.getElementById('saveBtn');
+    const statusMsg = document.getElementById('statusMsg');
+
+    // Load existing settings
+    window.enk.getSettings().then(settings => {
+      if (settings.apiKey) apiKeyInput.value = settings.apiKey;
+      enabledToggle.checked = settings.enabled;
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const apiKey = apiKeyInput.value.trim();
+
+      await window.enk.saveSettings({
+        apiKey,
+        enabled: enabledToggle.checked,
+        firstLaunch: false
+      });
+
+      statusMsg.classList.add('visible');
+      setTimeout(() => statusMsg.classList.remove('visible'), 2000);
+    });
+  </script>
+</body>
+</html>
