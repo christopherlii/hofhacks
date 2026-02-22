@@ -145,4 +145,7 @@ contextBridge.exposeInMainWorld('enk', {
   onElephantLoading: (callback: () => void): void => {
     ipcRenderer.on('elephant-loading', () => callback());
   },
+  onElephantTextResult: (callback: (data: { suggestion_id: string; label: string; text: string }) => void): void => {
+    ipcRenderer.on('elephant-text-result', (_event, data) => callback(data));
+  },
 });

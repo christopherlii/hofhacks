@@ -1,6 +1,6 @@
-import { captureAllScreens, extractNewContent, OcrEngine, ScreenChangeTracker } from './screen-pipeline';
-import { scrubSensitiveData, textSimilarity } from '../../modules/scrub';
-import { extractVisionContext, resizeForVision, shouldRunVision, type VisionResult } from '../vision/gemini';
+import { extractVisionContext, resizeForVision, shouldRunVision, type VisionResult } from '../../main/vision/gemini';
+import { captureAllScreens, extractNewContent, OcrEngine, ScreenChangeTracker } from '../../main/monitoring/screen-pipeline';
+import { scrubSensitiveData, textSimilarity } from '../../shared/scrub';
 
 import type { ClaudeRequestBody, ClaudeResponse, ContentSnapshot, ScamResult } from '../../types';
 

@@ -4,7 +4,7 @@ import { NiaClient } from '../nia-client';
 import { LocalKnowledgeCache } from './knowledge/local-cache';
 import { pollActiveWindow as pollActiveWindowFromModule, type ActiveWindowState } from './monitoring/activity';
 import { LocalSignalsMonitor } from './monitoring/local-signals';
-import { OcrEngine, ScreenChangeTracker } from './monitoring/screen-pipeline';
+import { captureAllScreens, OcrEngine, ScreenChangeTracker } from './monitoring/screen-pipeline';
 import {
   getApiKey as getStoreApiKey,
   getSettingsPayload as buildSettingsPayload,
@@ -14,7 +14,7 @@ import {
 import { initConfigStore } from './platform/store';
 import { AppWindows } from './platform/windows';
 import type { ActivityEntry, ContentSnapshot, ScamResult, Settings } from '../types';
-import * as elephant from '../modules/elephant';
+import * as elephant from '../modules/elephant/elephant';
 import { createAssistantApi } from './assistant/api';
 import { createClaudeApi } from './claude-api';
 import { createFlushToNia } from './nia/flush';
@@ -22,7 +22,7 @@ import { createGraphApi } from './graph/api';
 import { createInsightsApi } from './insights';
 import { createIpcRegistration } from './ipc/setup';
 import { createMonitoringControl } from './monitoring/control';
-import { createMonitoringPipeline } from './monitoring/capture-loop';
+import { createMonitoringPipeline } from '../modules/turtle/turtle';
 
 let store: any;
 
@@ -321,6 +321,43 @@ function startBootstrap(): void {
 
     elephant.init({
       apiKey: () => getStoreApiKey(store),
+      nia,
+      getContext: () => {
+        const latest = contentSnapshots[contentSnapshots.length - 1];
+        return {
+          activeApp: latest?.app ?? currentWindow.app ?? null,
+          windowTitle: latest?.title ?? currentWindow.title ?? null,
+          url: latest?.url ?? currentWindow.url ?? null,
+          visibleText: latest?.fullText ?? latest?.text ?? null,
+          ocrConfidence: latest ? 80 : 0,
+          timestamp: latest?.timestamp ?? Date.now(),
+        };
+      },
+      captureContext: async () => {
+        const screens = await captureAllScreens();
+        let visibleText: string | null = null;
+        let ocrConfidence = 0;
+
+        if (screens.length > 0) {
+          try {
+            const pngBuffer = screens[0].nativeImage.toPNG();
+            const ocrResult = await ocrEngine.run(pngBuffer);
+            visibleText = ocrResult.text;
+            ocrConfidence = ocrResult.confidence;
+          } catch (err) {
+            console.error('[Enk] Elephant live OCR failed:', (err as Error).message);
+          }
+        }
+
+        return {
+          activeApp: currentWindow.app || null,
+          windowTitle: currentWindow.title || null,
+          url: currentWindow.url || null,
+          visibleText,
+          ocrConfidence,
+          timestamp: Date.now(),
+        };
+      },
     });
     elephant.setupIPC();
     updateElephantShortcut();

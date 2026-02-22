@@ -73,12 +73,6 @@ export interface ClaudeResponse {
 
 // --- Safety & Scam Detection ---
 
-export interface GuardianResult {
-  flagged: boolean;
-  risk_level?: 'low' | 'medium' | 'high';
-  reason: string;
-}
-
 export interface ScamResult {
   flagged: boolean;
   risk_level: string;
