@@ -1,6 +1,15 @@
 import { registerAppIpcHandlers } from './register';
 
-import type { ScamResult, Settings } from '../../types';
+import type { 
+  ScamResult, 
+  Settings, 
+  UserModel, 
+  CurrentContext, 
+  PersonEntity, 
+  ProjectEntity, 
+  SkillEntity,
+  TaskBlock,
+} from '../../types';
 
 interface CreateIpcRegistrationDeps {
   getSettingsPayload: () => Settings;
@@ -31,6 +40,18 @@ interface CreateIpcRegistrationDeps {
   onOverlayMouseEnter: () => void;
   onOverlayMouseLeave: () => void;
   resizeOverlay: (height: number) => void;
+  
+  // User Model API
+  getUserModel: () => UserModel;
+  getCurrentContext: () => CurrentContext;
+  getTopPeople: (limit?: number) => PersonEntity[];
+  getActiveProjects: (limit?: number) => ProjectEntity[];
+  getExpertise: (limit?: number) => SkillEntity[];
+  getTaskBlocks: (limit?: number) => TaskBlock[];
+  getTimeline: (fromMs: number, toMs: number) => TaskBlock[];
+  getRelatedEntities: (entityId: string, limit?: number) => unknown[];
+  searchEntities: (query: string, limit?: number) => unknown[];
+  getDaySummary: (dateMs?: number) => unknown;
 }
 
 function createIpcRegistration(deps: CreateIpcRegistrationDeps) {
@@ -68,6 +89,18 @@ function createIpcRegistration(deps: CreateIpcRegistrationDeps) {
       onOverlayMouseEnter: deps.onOverlayMouseEnter,
       onOverlayMouseLeave: deps.onOverlayMouseLeave,
       resizeOverlay: deps.resizeOverlay,
+      
+      // User Model API
+      getUserModel: deps.getUserModel,
+      getCurrentContext: deps.getCurrentContext,
+      getTopPeople: deps.getTopPeople,
+      getActiveProjects: deps.getActiveProjects,
+      getExpertise: deps.getExpertise,
+      getTaskBlocks: deps.getTaskBlocks,
+      getTimeline: deps.getTimeline,
+      getRelatedEntities: deps.getRelatedEntities,
+      searchEntities: deps.searchEntities,
+      getDaySummary: deps.getDaySummary,
     });
 
     ipcRegistered = true;

@@ -24,6 +24,10 @@ interface CreateMonitoringControlDeps {
   cleanupGraph: () => Promise<{ nodesRemoved: number; edgesRemoved: number }>;
   buildNiaEdges: () => Promise<void>;
   updateStatus: (status: string) => void;
+  // Enrichment
+  enrichGraph: () => any;
+  decaySignals: () => void;
+  saveFullGraph: () => void;
 }
 
 function createMonitoringControl(deps: CreateMonitoringControlDeps) {
@@ -42,6 +46,7 @@ function createMonitoringControl(deps: CreateMonitoringControlDeps) {
   let fastIntentWarmupTimeout: ReturnType<typeof setTimeout> | null = null;
   let aiExtractWarmupTimeout: ReturnType<typeof setTimeout> | null = null;
   let graphWarmupTimeout: ReturnType<typeof setTimeout> | null = null;
+  let enrichmentTimer: ReturnType<typeof setInterval> | null = null;
 
   async function fastIntentExtraction(): Promise<void> {
     await extractFastIntent({
@@ -91,6 +96,17 @@ function createMonitoringControl(deps: CreateMonitoringControlDeps) {
       deps.cleanupGraph().catch(() => {});
       deps.buildNiaEdges().catch(() => {});
     }, 30 * 60 * 1000);
+
+    // Graph enrichment - every 10 minutes
+    enrichmentTimer = setInterval(() => {
+      deps.enrichGraph();
+      deps.decaySignals();
+    }, 10 * 60 * 1000);
+
+    // Initial enrichment after 5 minutes of data collection
+    setTimeout(() => {
+      deps.enrichGraph();
+    }, 5 * 60 * 1000);
   }
 
   function stopMonitoring(): void {
@@ -142,9 +158,13 @@ function createMonitoringControl(deps: CreateMonitoringControlDeps) {
       clearInterval(graphCleanupTimer);
       graphCleanupTimer = null;
     }
+    if (enrichmentTimer) {
+      clearInterval(enrichmentTimer);
+      enrichmentTimer = null;
+    }
 
     deps.localSignalsStop();
-    deps.saveGraphToStore();
+    deps.saveFullGraph();
     deps.updateStatus('inactive');
     console.log('[Enk] Monitoring stopped');
   }

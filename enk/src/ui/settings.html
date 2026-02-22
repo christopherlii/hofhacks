@@ -1,128 +1,274 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f7;
+      --bg-tertiary: #e8e8ed;
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-muted: #86868b;
+      --accent: #007aff;
+      --accent-hover: #0056b3;
+      --accent-light: rgba(0, 122, 255, 0.1);
+      --green: #34c759;
+      --red: #ff3b30;
+      --border: rgba(0, 0, 0, 0.08);
+      --radius: 12px;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1c1c1e;
+        --bg-secondary: #2c2c2e;
+        --bg-tertiary: #3a3a3c;
+        --text-primary: #f5f5f7;
+        --text-secondary: #a1a1a6;
+        --text-muted: #8e8e93;
+        --border: rgba(255, 255, 255, 0.1);
+      }
+    }
+    
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 32px;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 40px;
+      -webkit-font-smoothing: antialiased;
     }
-    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
-    .subtitle { color: #94a3b8; margin-bottom: 32px; font-size: 14px; line-height: 1.5; }
+    
+    h1 { 
+      font-size: 32px; 
+      font-weight: 700; 
+      margin-bottom: 8px; 
+      letter-spacing: -0.5px;
+    }
+    
+    .subtitle { 
+      color: var(--text-secondary); 
+      margin-bottom: 36px; 
+      font-size: 15px; 
+      line-height: 1.5; 
+    }
+    
     .privacy-notice {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 28px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 32px;
     }
-    .privacy-notice h3 { color: #38bdf8; font-size: 15px; margin-bottom: 12px; }
-    .privacy-notice ul { list-style: none; padding: 0; }
-    .privacy-notice li { padding: 4px 0; font-size: 13px; color: #cbd5e1; }
-    .privacy-notice li::before {
-      content: '';
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 10px;
-      vertical-align: middle;
-    }
-    .privacy-notice li.good::before { background: #4ade80; }
-    .privacy-notice li.bad::before { background: #ef4444; }
-    .form-group { margin-bottom: 24px; }
-    label {
-      display: block;
-      font-size: 13px;
+    
+    .privacy-notice h3 { 
+      color: var(--accent); 
+      font-size: 14px; 
       font-weight: 600;
-      color: #94a3b8;
+      margin-bottom: 16px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 8px;
     }
+    
+    .privacy-notice ul { 
+      list-style: none; 
+      padding: 0; 
+    }
+    
+    .privacy-notice li { 
+      padding: 6px 0; 
+      font-size: 14px; 
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .privacy-notice li::before {
+      content: '';
+      display: block;
+      width: 8px; 
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .privacy-notice li.good::before { background: var(--green); }
+    .privacy-notice li.bad::before { background: var(--red); }
+    
+    .form-group { 
+      margin-bottom: 28px; 
+    }
+    
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    
     input[type="password"], input[type="text"] {
       width: 100%;
-      padding: 12px 16px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #f8fafc;
-      font-size: 14px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
+      padding: 14px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.2s ease;
     }
-    input:focus { border-color: #38bdf8; }
+    
+    input:focus { 
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-light);
+    }
+    
+    .input-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    
+    .input-hint a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    
+    .input-hint a:hover {
+      text-decoration: underline;
+    }
+    
     .toggle-container {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #1e293b;
-      padding: 16px;
-      border-radius: 8px;
-      border: 1px solid #334155;
+      background: var(--bg-secondary);
+      padding: 18px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
       margin-bottom: 10px;
     }
-    .toggle-label { font-size: 15px; color: #e2e8f0; text-transform: none; letter-spacing: 0; }
-    .toggle { position: relative; width: 48px; height: 26px; cursor: pointer; }
+    
+    .toggle-label { 
+      font-size: 16px; 
+      font-weight: 500;
+      color: var(--text-primary); 
+    }
+    
+    .toggle { 
+      position: relative; 
+      width: 51px; 
+      height: 31px; 
+      cursor: pointer; 
+    }
+    
     .toggle input { display: none; }
+    
     .toggle-slider {
-      position: absolute; inset: 0;
-      background: #475569; border-radius: 13px; transition: background 0.3s;
+      position: absolute; 
+      inset: 0;
+      background: var(--bg-tertiary); 
+      border-radius: 16px; 
+      transition: all 0.2s ease;
     }
+    
     .toggle-slider::before {
-      content: ''; position: absolute;
-      width: 20px; height: 20px; background: white; border-radius: 50%;
-      top: 3px; left: 3px; transition: transform 0.3s;
+      content: ''; 
+      position: absolute;
+      width: 27px; 
+      height: 27px; 
+      background: white; 
+      border-radius: 50%;
+      top: 2px; 
+      left: 2px; 
+      transition: transform 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
-    .toggle input:checked + .toggle-slider { background: #4ade80; }
-    .toggle input:checked + .toggle-slider::before { transform: translateX(22px); }
+    
+    .toggle input:checked + .toggle-slider { 
+      background: var(--green); 
+    }
+    
+    .toggle input:checked + .toggle-slider::before { 
+      transform: translateX(20px); 
+    }
+    
     .btn {
       width: 100%;
-      padding: 14px;
-      background: #3b82f6;
+      padding: 16px;
+      background: var(--accent);
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 15px;
+      border-radius: 10px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
-      margin-top: 8px;
+      transition: all 0.2s ease;
+      margin-top: 12px;
     }
-    .btn:hover { background: #2563eb; }
-    .btn:active { background: #1d4ed8; }
+    
+    .btn:hover { 
+      background: var(--accent-hover);
+      transform: scale(1.01);
+    }
+    
+    .btn:active { 
+      transform: scale(0.99);
+    }
+    
     .status-msg {
-      text-align: center; margin-top: 12px;
-      font-size: 13px; color: #4ade80; opacity: 0; transition: opacity 0.3s;
+      text-align: center; 
+      margin-top: 16px;
+      font-size: 14px; 
+      font-weight: 500;
+      color: var(--green); 
+      opacity: 0; 
+      transition: opacity 0.3s;
     }
+    
     .status-msg.visible { opacity: 1; }
   </style>
 </head>
 <body>
-  <h1>Enk Settings</h1>
-  <p class="subtitle">Personal memory assistant with real-time scam detection. Monitors your screen, tracks activity, and stores context in Nia.</p>
+  <h1>Settings</h1>
+  <p class="subtitle">Configure your personal memory assistant.</p>
 
   <div class="privacy-notice">
-    <h3>Privacy &amp; Data Notice</h3>
+    <h3>Privacy & Data</h3>
     <ul>
-      <li class="good">OCR runs 100% locally on your device using Tesseract.js</li>
-      <li class="good">Credit card numbers, SSNs, and passwords are scrubbed before any API call</li>
-      <li class="good">Screenshots are never saved to disk or logged</li>
-      <li class="bad">Scrubbed screen text is sent to Anthropic's API for scam detection</li>
-      <li class="bad">Activity summaries are stored in Nia's cloud for memory/search</li>
+      <li class="good">OCR runs 100% locally using Tesseract.js</li>
+      <li class="good">Sensitive data (cards, SSNs, passwords) is scrubbed before API calls</li>
+      <li class="good">Screenshots are never saved to disk</li>
+      <li class="bad">Scrubbed text sent to AI for context understanding</li>
+      <li class="bad">Activity summaries stored in Nia cloud for search</li>
     </ul>
   </div>
 
   <div class="form-group">
-    <label>Anthropic API Key (Claude)</label>
+    <label>Anthropic API Key</label>
     <input type="password" id="anthropicKey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
   </div>
 
   <div class="form-group">
     <label>Nia API Key</label>
     <input type="password" id="niaKey" placeholder="nk_..." autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="form-group">
+    <label>Vision API Key</label>
+    <input type="password" id="geminiKey" placeholder="sk-... (OpenAI) or AIza... (Gemini)" autocomplete="off" spellcheck="false">
+    <p class="input-hint">
+      OpenAI (sk-...) uses GPT-4o-mini • Gemini (AIza...) uses Flash 2.0<br>
+      <a href="https://platform.openai.com/api-keys" target="_blank">Get OpenAI key</a>
+    </p>
   </div>
 
   <div class="form-group">
@@ -134,6 +280,11 @@
       <span class="toggle-label">Scam Detection</span>
       <label class="toggle"><input type="checkbox" id="scamDetection" checked><span class="toggle-slider"></span></label>
     </div>
+    <div class="toggle-container">
+      <span class="toggle-label">Vision Extraction</span>
+      <label class="toggle"><input type="checkbox" id="useVisionExtraction"><span class="toggle-slider"></span></label>
+    </div>
+    <p class="input-hint">Vision uses AI to understand screen context — more accurate than OCR, ignores sidebars and notifications.</p>
   </div>
 
   <button class="btn" id="saveBtn">Save Settings</button>
@@ -142,24 +293,30 @@
   <script>
     const anthropicKeyInput = document.getElementById('anthropicKey');
     const niaKeyInput = document.getElementById('niaKey');
+    const geminiKeyInput = document.getElementById('geminiKey');
     const enabledToggle = document.getElementById('enabled');
     const scamToggle = document.getElementById('scamDetection');
+    const visionToggle = document.getElementById('useVisionExtraction');
     const saveBtn = document.getElementById('saveBtn');
     const statusMsg = document.getElementById('statusMsg');
 
     window.enk.getSettings().then(settings => {
       if (settings.anthropicKey) anthropicKeyInput.value = settings.anthropicKey;
       if (settings.niaKey) niaKeyInput.value = settings.niaKey;
+      if (settings.geminiKey) geminiKeyInput.value = settings.geminiKey;
       enabledToggle.checked = settings.enabled;
       scamToggle.checked = settings.scamDetection;
+      visionToggle.checked = settings.useVisionExtraction || false;
     });
 
     saveBtn.addEventListener('click', async () => {
       await window.enk.saveSettings({
         anthropicKey: anthropicKeyInput.value.trim(),
         niaKey: niaKeyInput.value.trim(),
+        geminiKey: geminiKeyInput.value.trim(),
         enabled: enabledToggle.checked,
         scamDetection: scamToggle.checked,
+        useVisionExtraction: visionToggle.checked,
         firstLaunch: false
       });
       statusMsg.classList.add('visible');

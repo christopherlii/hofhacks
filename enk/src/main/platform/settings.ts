@@ -23,8 +23,10 @@ function getSettingsPayload(store: any): Settings {
   return {
     anthropicKey,
     niaKey: store.get('niaKey') as string,
+    geminiKey: store.get('geminiKey') as string | undefined,
     enabled,
     scamDetection: store.get('scamDetection') as boolean,
+    useVisionExtraction: store.get('useVisionExtraction') as boolean | undefined,
     firstLaunch: store.get('firstLaunch') as boolean,
     apiKey: anthropicKey,
     guardianEnabled: enabled,
@@ -38,8 +40,10 @@ function saveSettingsPayload(store: any, settings: Partial<Settings>, deps: Save
 
   if (anthropicKey !== undefined) store.set('anthropicKey', anthropicKey);
   if (settings.niaKey !== undefined) store.set('niaKey', settings.niaKey);
+  if (settings.geminiKey !== undefined) store.set('geminiKey', settings.geminiKey);
   if (monitoringEnabled !== undefined) store.set('enabled', monitoringEnabled);
   if (settings.scamDetection !== undefined) store.set('scamDetection', settings.scamDetection);
+  if (settings.useVisionExtraction !== undefined) store.set('useVisionExtraction', settings.useVisionExtraction);
   if (settings.elephantEnabled !== undefined) store.set('elephantEnabled', settings.elephantEnabled);
   if (settings.firstLaunch !== undefined) store.set('firstLaunch', settings.firstLaunch);
 

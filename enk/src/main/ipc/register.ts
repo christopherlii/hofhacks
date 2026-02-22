@@ -1,6 +1,15 @@
 import { ipcMain } from 'electron';
 
-import type { ScamResult, Settings } from '../../types';
+import type { 
+  ScamResult, 
+  Settings, 
+  UserModel, 
+  CurrentContext, 
+  PersonEntity, 
+  ProjectEntity, 
+  SkillEntity,
+  TaskBlock,
+} from '../../types';
 
 interface AppIpcDeps {
   getSettings: () => Settings;
@@ -31,6 +40,18 @@ interface AppIpcDeps {
   onOverlayMouseEnter: () => void;
   onOverlayMouseLeave: () => void;
   resizeOverlay: (height: number) => void;
+  
+  // User Model API
+  getUserModel: () => UserModel;
+  getCurrentContext: () => CurrentContext;
+  getTopPeople: (limit?: number) => PersonEntity[];
+  getActiveProjects: (limit?: number) => ProjectEntity[];
+  getExpertise: (limit?: number) => SkillEntity[];
+  getTaskBlocks: (limit?: number) => TaskBlock[];
+  getTimeline: (fromMs: number, toMs: number) => TaskBlock[];
+  getRelatedEntities: (entityId: string, limit?: number) => unknown[];
+  searchEntities: (query: string, limit?: number) => unknown[];
+  getDaySummary: (dateMs?: number) => unknown;
 }
 
 function registerAppIpcHandlers(deps: AppIpcDeps): void {
@@ -63,6 +84,22 @@ function registerAppIpcHandlers(deps: AppIpcDeps): void {
   ipcMain.handle('get-understanding-preview', () => deps.getUnderstandingPreview());
   ipcMain.handle('analyze-graph-group', async (_event, nodeIds: string[]) => deps.analyzeGraphGroup(nodeIds));
   ipcMain.handle('get-local-knowledge', () => deps.getLocalKnowledge());
+
+  // === User Model API ===
+  // Primary interface for apps consuming context
+  
+  ipcMain.handle('get-user-model', () => deps.getUserModel());
+  ipcMain.handle('get-current-context', () => deps.getCurrentContext());
+  ipcMain.handle('get-top-people', (_event, limit?: number) => deps.getTopPeople(limit));
+  ipcMain.handle('get-active-projects', (_event, limit?: number) => deps.getActiveProjects(limit));
+  ipcMain.handle('get-expertise', (_event, limit?: number) => deps.getExpertise(limit));
+  ipcMain.handle('get-task-blocks', (_event, limit?: number) => deps.getTaskBlocks(limit));
+  ipcMain.handle('get-timeline', (_event, fromMs: number, toMs: number) => deps.getTimeline(fromMs, toMs));
+  ipcMain.handle('get-related-entities', (_event, entityId: string, limit?: number) => 
+    deps.getRelatedEntities(entityId, limit));
+  ipcMain.handle('search-entities', (_event, query: string, limit?: number) => 
+    deps.searchEntities(query, limit));
+  ipcMain.handle('get-day-summary', (_event, dateMs?: number) => deps.getDaySummary(dateMs));
 
   ipcMain.on('open-settings', () => deps.openSettings());
   ipcMain.on('open-chat', () => deps.openChat());
