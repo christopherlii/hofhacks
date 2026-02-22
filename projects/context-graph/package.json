@@ -1,0 +1,22 @@
+{
+  "name": "context-graph",
+  "version": "2.0.0",
+  "description": "Personal context graph generator with dynamic type learning",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "tsc && node dist/index-dynamic.js",
+    "build": "tsc",
+    "generate": "tsc && node dist/index-dynamic.js",
+    "generate:legacy": "tsc && node dist/index.js",
+    "types": "tsc && node dist/cli/types-cli.js",
+    "visualize": "tsc && node dist/visualize.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

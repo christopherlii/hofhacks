@@ -1,0 +1,638 @@
+{
+  "version": "1.0.0",
+  "subject": "Chris",
+  "generatedAt": "2026-02-22T05:45:00Z",
+  "iteration": 1,
+  "summary": {
+    "nodeCount": 42,
+    "edgeCount": 58,
+    "confidence": 0.72,
+    "dataSourcesProcessed": 6
+  },
+  "nodes": [
+    {
+      "id": "identity_chris",
+      "type": "identity",
+      "label": "Chris",
+      "attributes": {
+        "fullName": "Chris Li",
+        "timezone": "EST",
+        "telegramId": "8576451141"
+      },
+      "confidence": 1.0,
+      "salience": 1.0,
+      "sources": ["USER.md", "telegram"]
+    },
+    {
+      "id": "trait_ambitious",
+      "type": "trait",
+      "label": "Ambitious",
+      "attributes": {
+        "intensity": "high",
+        "manifestation": "wants assistant who matches energy"
+      },
+      "confidence": 0.95,
+      "salience": 0.9,
+      "sources": ["USER.md", "memory/2026-01-31.md"]
+    },
+    {
+      "id": "trait_direct",
+      "type": "trait",
+      "label": "Direct communication style",
+      "attributes": {
+        "avoids": ["fluff", "emojis"],
+        "prefers": ["competence", "results"]
+      },
+      "confidence": 0.95,
+      "salience": 0.85,
+      "sources": ["USER.md"]
+    },
+    {
+      "id": "trait_driven",
+      "type": "trait",
+      "label": "Driven",
+      "attributes": {
+        "description": "Values drive and competence"
+      },
+      "confidence": 0.9,
+      "salience": 0.85,
+      "sources": ["USER.md"]
+    },
+    {
+      "id": "trait_high_agency",
+      "type": "trait",
+      "label": "High Agency",
+      "attributes": {
+        "description": "Believes in steering life, not spectating",
+        "source_philosophy": "Dan Koe content"
+      },
+      "confidence": 0.8,
+      "salience": 0.85,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "goal_billionaire",
+      "type": "goal",
+      "label": "Billionaire",
+      "attributes": {
+        "timeframe": "long-term",
+        "approach": "identity-first change"
+      },
+      "confidence": 0.75,
+      "salience": 0.95,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "goal_build_context_graph",
+      "type": "goal",
+      "label": "Build flawless context graph system",
+      "attributes": {
+        "budget": "$50",
+        "timeframe": "current project"
+      },
+      "confidence": 1.0,
+      "salience": 0.9,
+      "sources": ["conversation"]
+    },
+    {
+      "id": "org_nyu",
+      "type": "organization",
+      "label": "NYU",
+      "attributes": {
+        "type": "university",
+        "relationship": "student"
+      },
+      "confidence": 0.85,
+      "salience": 0.7,
+      "sources": ["projects/nyu-swipes"]
+    },
+    {
+      "id": "project_nyu_swipes",
+      "type": "project",
+      "label": "NYU Swipes",
+      "attributes": {
+        "stack": ["React", "TypeScript", "Vite", "Tailwind"],
+        "description": "Meal swipes marketplace for NYU students",
+        "features": ["auth", "orders", "sell", "profile", "checkout", "notifications"],
+        "status": "in development"
+      },
+      "confidence": 0.95,
+      "salience": 0.8,
+      "sources": ["projects/nyu-swipes/App.tsx", "projects/nyu-swipes/package.json"]
+    },
+    {
+      "id": "project_enk",
+      "type": "project",
+      "label": "ENK",
+      "attributes": {
+        "description": "Personal memory assistant that tracks computer activity",
+        "stack": ["Electron", "TypeScript", "Tesseract.js"],
+        "features": ["screen capture", "OCR", "AI analysis", "memory storage", "guardian (scam detection)"],
+        "event": "Hofhacks hackathon",
+        "status": "in development"
+      },
+      "confidence": 0.95,
+      "salience": 0.85,
+      "sources": ["projects/hofhacks-context/enk/package.json"]
+    },
+    {
+      "id": "project_notion_pitch",
+      "type": "project",
+      "label": "Notion UGC Pitch",
+      "attributes": {
+        "target": "Ivan Zhao",
+        "topic": "UGC strategy for Notion",
+        "status": "research phase"
+      },
+      "confidence": 0.9,
+      "salience": 0.6,
+      "sources": ["research/notion-ugc-pitch.md"]
+    },
+    {
+      "id": "skill_typescript",
+      "type": "skill",
+      "label": "TypeScript",
+      "attributes": { "level": "advanced", "evidence": "multiple projects" },
+      "confidence": 0.95,
+      "salience": 0.7,
+      "sources": ["projects/nyu-swipes", "projects/hofhacks-context/enk"]
+    },
+    {
+      "id": "skill_react",
+      "type": "skill",
+      "label": "React",
+      "attributes": { "level": "advanced", "evidence": "nyu-swipes project" },
+      "confidence": 0.95,
+      "salience": 0.7,
+      "sources": ["projects/nyu-swipes"]
+    },
+    {
+      "id": "skill_electron",
+      "type": "skill",
+      "label": "Electron",
+      "attributes": { "level": "intermediate-advanced", "evidence": "ENK project" },
+      "confidence": 0.9,
+      "salience": 0.6,
+      "sources": ["projects/hofhacks-context/enk"]
+    },
+    {
+      "id": "skill_ai_integration",
+      "type": "skill",
+      "label": "AI Integration",
+      "attributes": { "level": "intermediate", "evidence": "Claude API usage in ENK" },
+      "confidence": 0.85,
+      "salience": 0.7,
+      "sources": ["projects/hofhacks-context/enk"]
+    },
+    {
+      "id": "skill_business_strategy",
+      "type": "skill",
+      "label": "Business Strategy",
+      "attributes": { "level": "developing", "evidence": "Notion UGC pitch research depth" },
+      "confidence": 0.7,
+      "salience": 0.6,
+      "sources": ["research/notion-ugc-pitch.md"]
+    },
+    {
+      "id": "belief_identity_first_change",
+      "type": "belief",
+      "label": "Identity-first change",
+      "attributes": {
+        "description": "Real change requires becoming the person, not just doing actions",
+        "source": "Dan Koe philosophy"
+      },
+      "confidence": 0.85,
+      "salience": 0.75,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "belief_iterative_intelligence",
+      "type": "belief",
+      "label": "Iterative Intelligence",
+      "attributes": {
+        "description": "Don't quit on first failure, iterate"
+      },
+      "confidence": 0.8,
+      "salience": 0.7,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "belief_time_urgency",
+      "type": "belief",
+      "label": "Time Urgency",
+      "attributes": {
+        "description": "Life moves fast, especially 20s-30s",
+        "source": "Andrew Yeung content"
+      },
+      "confidence": 0.8,
+      "salience": 0.7,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "belief_systems_over_goals",
+      "type": "belief",
+      "label": "Systems over Goals",
+      "attributes": {
+        "description": "Build the game structure, not just objectives"
+      },
+      "confidence": 0.75,
+      "salience": 0.65,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "resource_notion",
+      "type": "resource",
+      "label": "Notion Command Center",
+      "attributes": {
+        "type": "productivity system",
+        "structure": ["Projects", "Tasks", "Network", "Ideas", "Goals", "Weekly Review"],
+        "status": "setup"
+      },
+      "confidence": 0.9,
+      "salience": 0.6,
+      "sources": ["memory/2026-01-31.md"]
+    },
+    {
+      "id": "resource_donna",
+      "type": "resource",
+      "label": "Donna (AI Assistant)",
+      "attributes": {
+        "type": "AI assistant",
+        "platform": "OpenClaw",
+        "personality": "Donna Paulsen from Suits",
+        "traits": ["sharp", "capable", "direct", "ambitious"]
+      },
+      "confidence": 1.0,
+      "salience": 0.7,
+      "sources": ["IDENTITY.md"]
+    },
+    {
+      "id": "interest_ugc_marketing",
+      "type": "interest",
+      "label": "UGC Marketing",
+      "attributes": {
+        "depth": "deep research",
+        "examples_studied": ["Cluely", "Turbo AI", "Wispr Flow"]
+      },
+      "confidence": 0.85,
+      "salience": 0.6,
+      "sources": ["research/notion-ugc-pitch.md"]
+    },
+    {
+      "id": "interest_productivity_systems",
+      "type": "interest",
+      "label": "Productivity Systems",
+      "attributes": {
+        "tools": ["Notion"],
+        "philosophy": "systems-based approach"
+      },
+      "confidence": 0.8,
+      "salience": 0.5,
+      "sources": ["memory/2026-01-31.md", "memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "interest_personal_development",
+      "type": "interest",
+      "label": "Personal Development",
+      "attributes": {
+        "influences": ["Dan Koe", "Andrew Yeung"],
+        "focus": "identity transformation"
+      },
+      "confidence": 0.85,
+      "salience": 0.7,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "interest_ai_agents",
+      "type": "interest",
+      "label": "AI Agents",
+      "attributes": {
+        "evidence": ["ENK project", "context graph request", "OpenClaw usage"]
+      },
+      "confidence": 0.9,
+      "salience": 0.8,
+      "sources": ["projects/hofhacks-context/enk", "conversation"]
+    },
+    {
+      "id": "preference_no_emojis",
+      "type": "preference",
+      "label": "No emojis in communication",
+      "attributes": {
+        "reason": "professional, clean"
+      },
+      "confidence": 0.95,
+      "salience": 0.4,
+      "sources": ["USER.md", "IDENTITY.md"]
+    },
+    {
+      "id": "preference_competence",
+      "type": "preference",
+      "label": "Values competence over niceness",
+      "attributes": {
+        "description": "Results-oriented"
+      },
+      "confidence": 0.9,
+      "salience": 0.6,
+      "sources": ["USER.md"]
+    },
+    {
+      "id": "behavior_builder",
+      "type": "behavior",
+      "label": "Active builder",
+      "attributes": {
+        "pattern": "Multiple concurrent projects",
+        "evidence": ["nyu-swipes", "ENK", "Notion pitch"]
+      },
+      "confidence": 0.95,
+      "salience": 0.8,
+      "sources": ["projects/*"]
+    },
+    {
+      "id": "behavior_deep_researcher",
+      "type": "behavior",
+      "label": "Deep research before action",
+      "attributes": {
+        "evidence": "16K+ word Notion pitch research doc"
+      },
+      "confidence": 0.85,
+      "salience": 0.6,
+      "sources": ["research/notion-ugc-pitch.md"]
+    },
+    {
+      "id": "behavior_hackathon_participant",
+      "type": "behavior",
+      "label": "Hackathon participant",
+      "attributes": {
+        "event": "Hofhacks"
+      },
+      "confidence": 0.9,
+      "salience": 0.5,
+      "sources": ["projects/hofhacks-context"]
+    },
+    {
+      "id": "event_started_donna",
+      "type": "event",
+      "label": "Started working with Donna",
+      "attributes": {
+        "date": "2026-01-31",
+        "significance": "AI assistant setup"
+      },
+      "confidence": 1.0,
+      "salience": 0.5,
+      "sources": ["memory/2026-01-31.md"]
+    },
+    {
+      "id": "person_ivan_zhao",
+      "type": "person",
+      "label": "Ivan Zhao",
+      "attributes": {
+        "relationship": "target for pitch",
+        "role": "Notion CEO"
+      },
+      "confidence": 0.9,
+      "salience": 0.4,
+      "sources": ["research/notion-ugc-pitch.md"]
+    },
+    {
+      "id": "person_dan_koe",
+      "type": "person",
+      "label": "Dan Koe",
+      "attributes": {
+        "relationship": "influence/thought leader",
+        "content": "How to fix your entire life in 1 day"
+      },
+      "confidence": 0.85,
+      "salience": 0.5,
+      "sources": ["memory/twitter-reading-2026-01-31.md"]
+    },
+    {
+      "id": "context_college_student",
+      "type": "context",
+      "label": "College student",
+      "attributes": {
+        "school": "NYU",
+        "evidence": "nyu-swipes project"
+      },
+      "confidence": 0.85,
+      "salience": 0.6,
+      "sources": ["projects/nyu-swipes"]
+    },
+    {
+      "id": "context_early_20s",
+      "type": "context",
+      "label": "Early 20s",
+      "attributes": {
+        "evidence": "college student, time urgency belief about 20s",
+        "estimated_age_range": "18-23"
+      },
+      "confidence": 0.7,
+      "salience": 0.5,
+      "sources": ["inference"]
+    },
+    {
+      "id": "pattern_technical_founder",
+      "type": "pattern",
+      "label": "Technical founder archetype",
+      "attributes": {
+        "indicators": ["builds products", "understands business", "deep research", "ambitious goals"]
+      },
+      "confidence": 0.8,
+      "salience": 0.75,
+      "sources": ["inference"]
+    },
+    {
+      "id": "pattern_night_owl",
+      "type": "pattern",
+      "label": "Night owl / late-night work",
+      "attributes": {
+        "evidence": "5:40 UTC message = 12:40 AM EST"
+      },
+      "confidence": 0.6,
+      "salience": 0.3,
+      "sources": ["conversation"]
+    },
+    {
+      "id": "interest_context_memory",
+      "type": "interest",
+      "label": "Personal context/memory systems",
+      "attributes": {
+        "projects": ["ENK", "context graph"],
+        "depth": "building solutions"
+      },
+      "confidence": 0.95,
+      "salience": 0.85,
+      "sources": ["projects/hofhacks-context/enk", "conversation"]
+    },
+    {
+      "id": "preference_iteration",
+      "type": "preference",
+      "label": "Iterative development",
+      "attributes": {
+        "evidence": "asked for iterative improvement until $50 or flawless"
+      },
+      "confidence": 0.9,
+      "salience": 0.6,
+      "sources": ["conversation"]
+    },
+    {
+      "id": "preference_technical_complexity",
+      "type": "preference",
+      "label": "Embraces technical complexity",
+      "attributes": {
+        "quote": "feel free to make it as technically complex as u want"
+      },
+      "confidence": 0.95,
+      "salience": 0.6,
+      "sources": ["conversation"]
+    }
+  ],
+  "edges": [
+    { "source": "identity_chris", "target": "trait_ambitious", "type": "is", "weight": 0.95 },
+    { "source": "identity_chris", "target": "trait_direct", "type": "is", "weight": 0.9 },
+    { "source": "identity_chris", "target": "trait_driven", "type": "is", "weight": 0.9 },
+    { "source": "identity_chris", "target": "trait_high_agency", "type": "believes", "weight": 0.8 },
+    { "source": "identity_chris", "target": "goal_billionaire", "type": "wants", "weight": 0.85 },
+    { "source": "identity_chris", "target": "goal_build_context_graph", "type": "wants", "weight": 1.0 },
+    { "source": "identity_chris", "target": "org_nyu", "type": "attends", "weight": 0.85 },
+    { "source": "identity_chris", "target": "project_nyu_swipes", "type": "created", "weight": 0.95 },
+    { "source": "identity_chris", "target": "project_enk", "type": "created", "weight": 0.95 },
+    { "source": "identity_chris", "target": "project_notion_pitch", "type": "created", "weight": 0.9 },
+    { "source": "identity_chris", "target": "skill_typescript", "type": "has", "weight": 0.95 },
+    { "source": "identity_chris", "target": "skill_react", "type": "has", "weight": 0.95 },
+    { "source": "identity_chris", "target": "skill_electron", "type": "has", "weight": 0.85 },
+    { "source": "identity_chris", "target": "skill_ai_integration", "type": "has", "weight": 0.8 },
+    { "source": "identity_chris", "target": "skill_business_strategy", "type": "has", "weight": 0.7 },
+    { "source": "identity_chris", "target": "belief_identity_first_change", "type": "believes", "weight": 0.85 },
+    { "source": "identity_chris", "target": "belief_iterative_intelligence", "type": "believes", "weight": 0.8 },
+    { "source": "identity_chris", "target": "belief_time_urgency", "type": "believes", "weight": 0.8 },
+    { "source": "identity_chris", "target": "belief_systems_over_goals", "type": "believes", "weight": 0.75 },
+    { "source": "identity_chris", "target": "resource_notion", "type": "uses", "weight": 0.9 },
+    { "source": "identity_chris", "target": "resource_donna", "type": "uses", "weight": 1.0 },
+    { "source": "identity_chris", "target": "interest_ugc_marketing", "type": "has", "weight": 0.7 },
+    { "source": "identity_chris", "target": "interest_productivity_systems", "type": "has", "weight": 0.8 },
+    { "source": "identity_chris", "target": "interest_personal_development", "type": "has", "weight": 0.85 },
+    { "source": "identity_chris", "target": "interest_ai_agents", "type": "has", "weight": 0.9 },
+    { "source": "identity_chris", "target": "interest_context_memory", "type": "has", "weight": 0.95 },
+    { "source": "identity_chris", "target": "preference_no_emojis", "type": "prefers", "weight": 0.95 },
+    { "source": "identity_chris", "target": "preference_competence", "type": "prefers", "weight": 0.9 },
+    { "source": "identity_chris", "target": "preference_iteration", "type": "prefers", "weight": 0.9 },
+    { "source": "identity_chris", "target": "preference_technical_complexity", "type": "prefers", "weight": 0.9 },
+    { "source": "identity_chris", "target": "behavior_builder", "type": "does", "weight": 0.95 },
+    { "source": "identity_chris", "target": "behavior_deep_researcher", "type": "does", "weight": 0.85 },
+    { "source": "identity_chris", "target": "behavior_hackathon_participant", "type": "does", "weight": 0.9 },
+    { "source": "identity_chris", "target": "context_college_student", "type": "is", "weight": 0.85 },
+    { "source": "identity_chris", "target": "context_early_20s", "type": "is", "weight": 0.7 },
+    { "source": "identity_chris", "target": "pattern_technical_founder", "type": "is", "weight": 0.8 },
+    { "source": "identity_chris", "target": "pattern_night_owl", "type": "is", "weight": 0.6 },
+    { "source": "project_nyu_swipes", "target": "org_nyu", "type": "part_of", "weight": 0.9 },
+    { "source": "project_nyu_swipes", "target": "skill_typescript", "type": "depends_on", "weight": 0.95 },
+    { "source": "project_nyu_swipes", "target": "skill_react", "type": "depends_on", "weight": 0.95 },
+    { "source": "project_enk", "target": "skill_electron", "type": "depends_on", "weight": 0.95 },
+    { "source": "project_enk", "target": "skill_ai_integration", "type": "depends_on", "weight": 0.9 },
+    { "source": "project_enk", "target": "interest_context_memory", "type": "part_of", "weight": 0.95 },
+    { "source": "project_notion_pitch", "target": "person_ivan_zhao", "type": "leads_to", "weight": 0.8 },
+    { "source": "project_notion_pitch", "target": "interest_ugc_marketing", "type": "part_of", "weight": 0.9 },
+    { "source": "project_notion_pitch", "target": "skill_business_strategy", "type": "depends_on", "weight": 0.7 },
+    { "source": "belief_identity_first_change", "target": "person_dan_koe", "type": "correlates", "weight": 0.85 },
+    { "source": "belief_iterative_intelligence", "target": "preference_iteration", "type": "correlates", "weight": 0.9 },
+    { "source": "goal_billionaire", "target": "trait_ambitious", "type": "correlates", "weight": 0.95 },
+    { "source": "goal_billionaire", "target": "belief_identity_first_change", "type": "depends_on", "weight": 0.8 },
+    { "source": "goal_billionaire", "target": "pattern_technical_founder", "type": "leads_to", "weight": 0.7 },
+    { "source": "resource_donna", "target": "trait_direct", "type": "correlates", "weight": 0.9 },
+    { "source": "interest_ai_agents", "target": "project_enk", "type": "leads_to", "weight": 0.9 },
+    { "source": "interest_ai_agents", "target": "goal_build_context_graph", "type": "leads_to", "weight": 0.95 },
+    { "source": "behavior_builder", "target": "pattern_technical_founder", "type": "correlates", "weight": 0.9 },
+    { "source": "behavior_deep_researcher", "target": "project_notion_pitch", "type": "leads_to", "weight": 0.85 },
+    { "source": "context_college_student", "target": "context_early_20s", "type": "correlates", "weight": 0.9 },
+    { "source": "belief_time_urgency", "target": "context_early_20s", "type": "correlates", "weight": 0.85 }
+  ],
+  "gaps": [
+    {
+      "area": "personal_life",
+      "description": "No information about hobbies, personal relationships, or life outside of work/projects",
+      "suggestedQuestions": [
+        "What do you do for fun outside of building things?",
+        "Who are the important people in your life?",
+        "What's your daily routine like?"
+      ]
+    },
+    {
+      "area": "origin_story",
+      "description": "Limited information about background, where from, how got into tech",
+      "suggestedQuestions": [
+        "How did you first get into programming?",
+        "What's your background before NYU?",
+        "What inspired the billionaire goal specifically?"
+      ]
+    },
+    {
+      "area": "emotional_landscape",
+      "description": "No data on emotional triggers, stressors, or what brings joy",
+      "suggestedQuestions": [
+        "What motivates you when things get hard?",
+        "What frustrates you most?",
+        "What's a recent win that felt really good?"
+      ]
+    },
+    {
+      "area": "network",
+      "description": "Limited information about collaborators, mentors, or close connections",
+      "suggestedQuestions": [
+        "Who do you work with on projects?",
+        "Do you have mentors or people you look up to?",
+        "Who did you build ENK with at Hofhacks?"
+      ]
+    },
+    {
+      "area": "long_term_vision",
+      "description": "Billionaire goal exists but specifics (industry, approach, timeline) unclear",
+      "suggestedQuestions": [
+        "What kind of company do you want to build?",
+        "What problem do you most want to solve?",
+        "What's your 5-year plan?"
+      ]
+    }
+  ],
+  "clusters": [
+    {
+      "id": "cluster_builder",
+      "label": "Builder Identity",
+      "nodes": ["behavior_builder", "pattern_technical_founder", "project_nyu_swipes", "project_enk", "project_notion_pitch", "skill_typescript", "skill_react", "skill_electron", "skill_ai_integration"],
+      "coherence": 0.85,
+      "themes": ["technical skills", "active creation", "product development"]
+    },
+    {
+      "id": "cluster_philosophy",
+      "label": "Personal Philosophy",
+      "nodes": ["belief_identity_first_change", "belief_iterative_intelligence", "belief_time_urgency", "belief_systems_over_goals", "trait_high_agency", "person_dan_koe"],
+      "coherence": 0.8,
+      "themes": ["self-improvement", "agency", "intentionality"]
+    },
+    {
+      "id": "cluster_ambition",
+      "label": "Ambitious Drive",
+      "nodes": ["trait_ambitious", "trait_driven", "goal_billionaire", "preference_competence"],
+      "coherence": 0.9,
+      "themes": ["achievement", "excellence", "success"]
+    },
+    {
+      "id": "cluster_ai_context",
+      "label": "AI & Context Systems",
+      "nodes": ["interest_ai_agents", "interest_context_memory", "project_enk", "goal_build_context_graph", "resource_donna"],
+      "coherence": 0.9,
+      "themes": ["AI integration", "memory systems", "personal context"]
+    }
+  ],
+  "centralNodes": [
+    "identity_chris",
+    "trait_ambitious",
+    "behavior_builder",
+    "interest_ai_agents",
+    "goal_billionaire",
+    "project_enk",
+    "belief_identity_first_change",
+    "pattern_technical_founder",
+    "skill_typescript",
+    "trait_direct"
+  ]
+}
