@@ -90,7 +90,7 @@ body {
 }
 
 .sidebar-header {
-  padding: 36px 20px 20px;
+  padding: 72px 16px 16px; /* Extra top padding for macOS traffic lights */
   -webkit-app-region: drag;
 }
 
@@ -1422,7 +1422,7 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             <span id="graphNodeCount" style="font-size:11px;color:var(--text-muted);"></span>
             <button class="action-btn" id="refreshGraphBtn" style="margin-left:auto;font-size:11px;padding:4px 10px;">Refresh</button>
           </div>
-          <div id="graphCanvas" style="flex:1;position:relative;margin:0 8px 8px 16px;border-radius:12px;background:#000000;border:1px solid var(--border);overflow:hidden;">
+          <div id="graphCanvas" style="flex:1;position:relative;margin:0 8px 8px 16px;overflow:hidden;">
             <div id="graphContainer" style="width:100%;height:100%;"></div>
             <!-- Zoom indicator -->
             <div id="graphZoomIndicator" style="position:absolute;bottom:10px;right:10px;padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.85);border:1px solid rgba(148,163,184,0.25);font-size:11px;color:var(--text-muted);pointer-events:none;z-index:50;">100%</div>
@@ -2293,7 +2293,10 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             _contextDiversity: diversity,
             borderWidth: isVerified ? 3 : 1,
             borderDashes: isVerified ? false : [3, 3],
-            shadow: { enabled: true, size: isVerified ? 80 : 60, x: 0, y: 0, color: baseColor },
+            shadow: { enabled: true, size: 16, color: haloColor, x: 0, y: 0 },
+            _baseColor: baseColor,
+            _haloShadow: { enabled: true, size: 16, color: haloColor, x: 0, y: 0 },
+            _originalColor: { background: bg, border: baseColor },
             hidden: false,
           };
         }));
@@ -2372,12 +2375,45 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
               max: 50, 
               label: { enabled: true, min: 11, max: 15, drawThreshold: 6 } 
             },
-            borderWidth: 2,
-            shadow: true,
-            font: { face: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' },
+            borderWidth: 0,
+            borderWidthSelected: 3,
+            shadow: {
+              enabled: true,
+              color: 'rgba(0,0,0,0.3)',
+              size: 8,
+              x: 0,
+              y: 2,
+            },
+            font: { 
+              face: '-apple-system, BlinkMacSystemFont, Inter, sans-serif',
+              color: '#fafafa',
+              size: 12,
+              strokeWidth: 3,
+              strokeColor: '#0a0a0b',
+            },
+            chosen: {
+              node: function(values, id, selected, hovering) {
+                if (selected) {
+                  values.borderWidth = 3;
+                  values.borderColor = '#6366f1';
+                  values.shadow = true;
+                  values.shadowColor = 'rgba(99, 102, 241, 0.4)';
+                  values.shadowSize = 16;
+                }
+                if (hovering) {
+                  values.size = values.size * 1.1;
+                }
+              }
+            }
           },
           edges: {
-            scaling: { min: 2, max: 7 },
+            width: 1,
+            color: {
+              color: 'rgba(148, 163, 184, 0.28)',
+              highlight: 'rgba(99, 102, 241, 0.7)',
+              hover: 'rgba(148, 163, 184, 0.45)',
+            },
+            scaling: { min: 1, max: 4 },
             selectionWidth: 2,
             hoverWidth: 1.5,
             smooth: {
@@ -2573,158 +2609,23 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
         });
 
         // ── Click: node detail or edge detail ──
-        // Store original colors so we can restore them
-        const _origNodeColors = {};
-        graphNodesDS.forEach(n => {
-          _origNodeColors[n.id] = { color: n.color, font: { ...n.font }, shadow: n.shadow, borderWidth: n.borderWidth };
-        });
-
-        const DIM_NODE = { background: 'rgba(50,50,50,0.3)', border: 'rgba(80,80,80,0.3)' };
-        const DIM_FONT = 'rgba(100,100,100,0.3)';
-        const DIM_EDGE = 'rgba(60,60,60,0.1)';
-        const FULL_EDGE = 'rgba(148, 163, 184, 0.25)';
-
-        function parseRgba(str) {
-          const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-          if (m) return [+m[1], +m[2], +m[3], m[4] !== undefined ? +m[4] : 1];
-          // hex
-          const h = str.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})?$/i);
-          if (h) return [parseInt(h[1],16), parseInt(h[2],16), parseInt(h[3],16), h[4] !== undefined ? parseInt(h[4],16)/255 : 1];
-          return [128,128,128,1];
-        }
-
-        function lerpRgba(from, to, t) {
-          const f = parseRgba(from), tt = parseRgba(to);
-          const r = Math.round(f[0] + (tt[0]-f[0])*t);
-          const g = Math.round(f[1] + (tt[1]-f[1])*t);
-          const b = Math.round(f[2] + (tt[2]-f[2])*t);
-          const a = +(f[3] + (tt[3]-f[3])*t).toFixed(3);
-          return `rgba(${r},${g},${b},${a})`;
-        }
-
-        let _focusAnim = null;
-        const ANIM_DURATION = 300;
-
-        function animateFocus(targetNodeId) {
-          if (_focusAnim) cancelAnimationFrame(_focusAnim);
-          const connEdgeIds = targetNodeId ? new Set(graphNetwork.getConnectedEdges(targetNodeId)) : new Set();
-          const connNodes = targetNodeId ? new Set(graphNetwork.getConnectedNodes(targetNodeId)) : new Set();
-          if (targetNodeId) connNodes.add(targetNodeId);
-          const isFocusing = !!targetNodeId;
-
-          const startTime = performance.now();
-
-          // Snapshot current state of each node/edge for lerping
-          const nodeSnap = {};
-          graphNodesDS.forEach(n => {
-            nodeSnap[n.id] = {
-              bg: typeof n.color === 'object' ? n.color.background : (n.color || '#888'),
-              border: typeof n.color === 'object' ? n.color.border : (n.color || '#888'),
-              fontColor: n.font?.color || '#fff',
-            };
-          });
-          const edgeSnap = {};
-          graphEdgesDS.forEach(e => {
-            edgeSnap[e.id] = typeof e.color === 'object' ? e.color.color : (e.color || FULL_EDGE);
-          });
-
-          // Compute targets
-          const nodeTargets = {};
-          graphNodesDS.forEach(n => {
-            const orig = _origNodeColors[n.id];
-            const bright = !isFocusing || connNodes.has(n.id);
-            const origBg = typeof orig.color === 'object' ? orig.color.background : (orig.color || '#888');
-            const origBorder = typeof orig.color === 'object' ? orig.color.border : (orig.color || '#888');
-            const origFont = orig.font?.color || '#fff';
-            nodeTargets[n.id] = {
-              bg: bright ? origBg : DIM_NODE.background,
-              border: bright ? origBorder : DIM_NODE.border,
-              fontColor: bright ? origFont : DIM_FONT,
-              shadow: bright ? orig.shadow : { enabled: false },
-              borderWidth: bright ? orig.borderWidth : 0,
-            };
-          });
-          const edgeTargets = {};
-          graphEdgesDS.forEach(e => {
-            const bright = !isFocusing || connEdgeIds.has(e.id);
-            edgeTargets[e.id] = bright ? FULL_EDGE : DIM_EDGE;
-          });
-
-          function step(now) {
-            const t = Math.min((now - startTime) / ANIM_DURATION, 1);
-            const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // ease in-out
-
-            graphNodesDS.forEach(n => {
-              const snap = nodeSnap[n.id];
-              const tgt = nodeTargets[n.id];
-              if (!snap || !tgt) return;
-              const bg = lerpRgba(snap.bg, tgt.bg, ease);
-              const border = lerpRgba(snap.border, tgt.border, ease);
-              const fc = lerpRgba(snap.fontColor, tgt.fontColor, ease);
-              graphNodesDS.update({
-                id: n.id,
-                color: { background: bg, border: border, highlight: { background: bg, border: border }, hover: { background: bg, border: border } },
-                font: { ...n.font, color: fc },
-                shadow: t >= 1 ? tgt.shadow : n.shadow,
-                borderWidth: t >= 1 ? tgt.borderWidth : n.borderWidth,
-              });
-            });
-            graphEdgesDS.forEach(e => {
-              const snap = edgeSnap[e.id];
-              const tgt = edgeTargets[e.id];
-              if (!snap || !tgt) return;
-              const c = lerpRgba(snap, tgt, ease);
-              graphEdgesDS.update({ id: e.id, color: { color: c, highlight: c, hover: c } });
-            });
-
-            if (t < 1) {
-              _focusAnim = requestAnimationFrame(step);
-            } else {
-              _focusAnim = null;
-            }
-          }
-          _focusAnim = requestAnimationFrame(step);
-        }
-
-        function focusNode(nodeId) { animateFocus(nodeId); }
-        function unfocusAll() { animateFocus(null); }
-
-        graphNetwork.on('dragEnd', () => {
-          if (graphNetwork && graphNetwork.physics) {
-            try { graphNetwork.physics.physicsBody.simulation.restartSimulation?.(); } catch {}
-          }
-        });
-
-        let _focusedNodeId = null;
-
-        function handleNodeFocus(nodeId, isShift) {
-          if (isShift) {
-            if (selectedNodes.has(nodeId)) selectedNodes.delete(nodeId);
-            else selectedNodes.add(nodeId);
-            updateSelectionUI();
-            graphNetwork.unselectAll();
-            return;
-          }
-          selectedNodes.clear();
-          updateSelectionUI();
-          unfocusAll();
-          _focusedNodeId = nodeId;
-          focusNode(nodeId);
-          showNodeDetail(nodeId);
-        }
-
-        graphNetwork.on('dragStart', (params) => {
-          if (params.nodes.length > 0) {
-            handleNodeFocus(params.nodes[0], false);
-          }
-        });
-
         graphNetwork.on('click', (params) => {
           const isShift = params.event?.srcEvent?.shiftKey || false;
 
           if (params.nodes.length > 0) {
-            handleNodeFocus(params.nodes[0], isShift);
-            return;
+            const nodeId = params.nodes[0];
+            if (isShift) {
+              if (selectedNodes.has(nodeId)) selectedNodes.delete(nodeId);
+              else selectedNodes.add(nodeId);
+              updateSelectionUI();
+              graphNetwork.unselectAll();
+              applyFocusDimmingFn?.(selectedNodes.size > 0 ? Array.from(selectedNodes) : []);
+              return;
+            }
+            selectedNodes.clear();
+            updateSelectionUI();
+            applyFocusDimmingFn?.([nodeId]);
+            showNodeDetail(nodeId);
           } else if (params.edges.length > 0) {
             const edgeId = params.edges[0];
             const e = graphEdgesDS.get(edgeId);
@@ -2736,7 +2637,7 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             if (!isShift) {
               selectedNodes.clear();
               updateSelectionUI();
-              unfocusAll();
+              applyFocusDimmingFn?.([]);
               document.getElementById('inspectorDetail').style.display = 'none';
               document.getElementById('inspectorAnalysis').style.display = 'none';
               document.getElementById('inspectorEmpty').style.display = 'block';
