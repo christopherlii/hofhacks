@@ -1,5 +1,6 @@
 import type { ClaudeRequestBody, ClaudeResponse, ContentSnapshot, EntityNode } from '../../types';
 import { EntityStore, normalizeEntity } from './entity-store';
+import { extractJsonArray, extractJsonObject, isValidEntityName } from '../../lib/utils';
 
 interface ExtractionDeps {
   getStore: () => any;
@@ -213,65 +214,37 @@ Max 8 entities, 4 relations. Quality over quantity.`,
   const text = data.content?.[0]?.text;
   if (!text) return;
 
-  const objMatch = text.match(/\{[\s\S]*\}/);
-  const arrMatch = text.match(/\[[\s\S]*\]/);
+  interface ExtractedData {
+    entities?: { label: string; type: EntityNode['type']; confidence: string }[];
+    relations?: { from: string; to: string; relation: string }[];
+  }
 
-  try {
-    if (objMatch) {
-      const parsed = JSON.parse(objMatch[0]) as {
-        entities?: { label: string; type: EntityNode['type']; confidence: string }[];
-        relations?: { from: string; to: string; relation: string }[];
-      };
-      const entities = parsed.entities ?? [];
-      const relations = parsed.relations ?? [];
+  const parsed = extractJsonObject<ExtractedData>(text);
+  const contextHint = `${deps.getCurrentApp()}:${Date.now()}`;
+  
+  // Try object format first, then array format
+  const entities = parsed?.entities ?? extractJsonArray<ExtractedData['entities']>(text) ?? [];
+  const relations = parsed?.relations ?? [];
 
-      // Use a more specific context hint
-      const contextHint = `${deps.getCurrentApp()}:${Date.now()}`;
-      
-      for (const entity of entities) {
-        if (!entity.label || !entity.type) continue;
-        if (entity.label.length < 2 || entity.label.length > 50) continue;
-        
-        entityStore.addEntity(entity.label, entity.type, deps.getCurrentApp, 'ai-extract', contextHint);
-        if (entity.confidence === 'high') {
-          const id = `${entity.type}:${normalizeEntity(entity.label)}`;
-          const node = entityStore.nodes.get(id);
-          if (node) node.verified = true;
-        }
-      }
-
-      for (const rel of relations) {
-        if (rel.from && rel.to && rel.relation) {
-          entityStore.addRelation(rel.from.trim(), rel.to.trim(), rel.relation);
-        }
-      }
-
-      if (entities.length > 0 || relations.length > 0) {
-        console.log(`[Enk] AI extracted: ${entities.map((e) => e.label).join(', ')}${relations.length ? `; ${relations.length} relations` : ''}`);
-      }
-      return;
+  for (const entity of entities) {
+    if (!entity.label || !entity.type || !isValidEntityName(entity.label)) continue;
+    
+    entityStore.addEntity(entity.label, entity.type, deps.getCurrentApp, 'ai-extract', contextHint);
+    if (entity.confidence === 'high') {
+      const id = `${entity.type}:${normalizeEntity(entity.label)}`;
+      const node = entityStore.nodes.get(id);
+      if (node) node.verified = true;
     }
-    if (arrMatch) {
-      const entities: { label: string; type: EntityNode['type']; confidence: string }[] = JSON.parse(arrMatch[0]);
-      const contextHint = `${deps.getCurrentApp()}:${Date.now()}`;
-      
-      for (const entity of entities) {
-        if (!entity.label || !entity.type) continue;
-        if (entity.label.length < 2 || entity.label.length > 50) continue;
-        
-        entityStore.addEntity(entity.label, entity.type, deps.getCurrentApp, 'ai-extract', contextHint);
-        if (entity.confidence === 'high') {
-          const id = `${entity.type}:${normalizeEntity(entity.label)}`;
-          const node = entityStore.nodes.get(id);
-          if (node) node.verified = true;
-        }
-      }
-      if (entities.length > 0) {
-        console.log(`[Enk] AI extracted: ${entities.map((e) => e.label).join(', ')}`);
-      }
+  }
+
+  for (const rel of relations) {
+    if (rel.from && rel.to && rel.relation) {
+      entityStore.addRelation(rel.from.trim(), rel.to.trim(), rel.relation);
     }
-  } catch {
-    // ignore parse errors
+  }
+
+  if (entities.length > 0 || relations.length > 0) {
+    console.log(`[Enk] AI extracted: ${entities.map((e) => e.label).join(', ')}${relations.length ? `; ${relations.length} relations` : ''}`);
   }
 }
 

@@ -1,6 +1,7 @@
 import type { NiaClient } from '../../nia-client';
 import type { ClaudeRequestBody, ClaudeResponse } from '../../types';
 import type { EntityStore } from './entity-store';
+import { extractJsonObject, withTimeout } from '../../lib/utils';
 
 const GRAPH_DECAY_STALE_DAYS = 7;
 const GRAPH_DECAY_MIN_WEIGHT = 2;
@@ -160,13 +161,15 @@ Rules:
   const text = data.content?.[0]?.text;
   if (!text) return { nodesRemoved: 0, edgesRemoved: 0 };
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return { nodesRemoved: 0, edgesRemoved: 0 };
+  const result = extractJsonObject<{ 
+    keep?: string[]; 
+    remove?: string[]; 
+    merge?: { into: string; from: string[] }[] 
+  }>(text);
+  
+  if (!result) return { nodesRemoved: 0, edgesRemoved: 0 };
 
   try {
-    const result: { keep?: string[]; remove?: string[]; merge?: { into: string; from: string[] }[] } = JSON.parse(
-      jsonMatch[0]
-    );
 
     let removed = 0;
     let merged = 0;
@@ -251,10 +254,6 @@ Rules:
   const nodesRemoved = beforeNodes - entityStore.nodes.size;
   const edgesRemoved = beforeEdges - entityStore.edges.size;
   return { nodesRemoved, edgesRemoved };
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([promise, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
 }
 
 export { decayGraph, buildNiaEdges, cleanupGraph };
