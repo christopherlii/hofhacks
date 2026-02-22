@@ -15,6 +15,8 @@ interface PollActiveWindowDeps {
   contentSnapshots: ContentSnapshot[];
   activityLog: ActivityEntry[];
   extractEntitiesFromActivity: (appName: string, title: string, url: string | null, summary: string | null) => void;
+  // Optional: record activity signals for identity graph
+  recordActivitySignal?: (app: string, url: string | null, durationMs: number) => void;
 }
 
 const BROWSER_APPS: Record<string, string> = {
@@ -125,6 +127,11 @@ async function pollActiveWindow(deps: PollActiveWindowDeps): Promise<ActiveWindo
         duration,
         summary: recentSummary,
       });
+
+      // Record activity signal for identity graph
+      if (deps.recordActivitySignal) {
+        deps.recordActivitySignal(deps.currentWindow.app, deps.currentWindow.url, duration);
+      }
     }
 
     deps.extractEntitiesFromActivity(win.app, win.title, win.url, null);

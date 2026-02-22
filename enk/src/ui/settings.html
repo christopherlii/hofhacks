@@ -126,6 +126,16 @@
   </div>
 
   <div class="form-group">
+    <label>Vision API Key (OpenAI or Gemini)</label>
+    <input type="password" id="geminiKey" placeholder="sk-... or AIza..." autocomplete="off" spellcheck="false">
+    <p style="font-size: 11px; color: #64748b; margin-top: 6px;">
+      OpenAI key (sk-...) uses GPT-4o-mini (~$1-3/mo). 
+      Gemini key (AIza...) uses Gemini 2.0 Flash (~$2-5/mo).
+      <br>Get OpenAI key at <a href="https://platform.openai.com/api-keys" style="color: #38bdf8;" target="_blank">platform.openai.com</a>
+    </p>
+  </div>
+
+  <div class="form-group">
     <div class="toggle-container">
       <span class="toggle-label">Monitoring Active</span>
       <label class="toggle"><input type="checkbox" id="enabled" checked><span class="toggle-slider"></span></label>
@@ -134,6 +144,11 @@
       <span class="toggle-label">Scam Detection</span>
       <label class="toggle"><input type="checkbox" id="scamDetection" checked><span class="toggle-slider"></span></label>
     </div>
+    <div class="toggle-container">
+      <span class="toggle-label">Vision Extraction</span>
+      <label class="toggle"><input type="checkbox" id="useVisionExtraction"><span class="toggle-slider"></span></label>
+    </div>
+    <p style="font-size: 11px; color: #64748b; margin-top: 6px;">Uses AI vision to understand screen context. More accurate than OCR — understands layout and ignores sidebars.</p>
   </div>
 
   <button class="btn" id="saveBtn">Save Settings</button>
@@ -142,24 +157,30 @@
   <script>
     const anthropicKeyInput = document.getElementById('anthropicKey');
     const niaKeyInput = document.getElementById('niaKey');
+    const geminiKeyInput = document.getElementById('geminiKey');
     const enabledToggle = document.getElementById('enabled');
     const scamToggle = document.getElementById('scamDetection');
+    const visionToggle = document.getElementById('useVisionExtraction');
     const saveBtn = document.getElementById('saveBtn');
     const statusMsg = document.getElementById('statusMsg');
 
     window.enk.getSettings().then(settings => {
       if (settings.anthropicKey) anthropicKeyInput.value = settings.anthropicKey;
       if (settings.niaKey) niaKeyInput.value = settings.niaKey;
+      if (settings.geminiKey) geminiKeyInput.value = settings.geminiKey;
       enabledToggle.checked = settings.enabled;
       scamToggle.checked = settings.scamDetection;
+      visionToggle.checked = settings.useVisionExtraction || false;
     });
 
     saveBtn.addEventListener('click', async () => {
       await window.enk.saveSettings({
         anthropicKey: anthropicKeyInput.value.trim(),
         niaKey: niaKeyInput.value.trim(),
+        geminiKey: geminiKeyInput.value.trim(),
         enabled: enabledToggle.checked,
         scamDetection: scamToggle.checked,
+        useVisionExtraction: visionToggle.checked,
         firstLaunch: false
       });
       statusMsg.classList.add('visible');

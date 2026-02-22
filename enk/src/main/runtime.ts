@@ -99,6 +99,7 @@ async function pollActiveWindow(): Promise<void> {
     contentSnapshots,
     activityLog,
     extractEntitiesFromActivity: graphApi.extractEntitiesFromActivity,
+    recordActivitySignal: graphApi.recordActivitySignal,
   });
 }
 
@@ -124,6 +125,7 @@ const monitoringPipeline = createMonitoringPipeline({
   pendingSummaries,
   previousTexts,
   extractEntitiesFromActivity: graphApi.extractEntitiesFromActivity,
+  addEntity: graphApi.addEntity,
   claudeRequest: claudeApi.claudeRequest,
   analyzeForScam: claudeApi.analyzeForScam,
   showScamAlert,
@@ -188,6 +190,10 @@ const monitoringControl = createMonitoringControl({
   cleanupGraph: graphApi.cleanupGraph,
   buildNiaEdges: graphApi.buildNiaEdges,
   updateStatus,
+  // Enrichment
+  enrichGraph: graphApi.enrichGraph,
+  decaySignals: graphApi.decaySignals,
+  saveFullGraph: graphApi.saveFullGraph,
 });
 
 const insightsApi = createInsightsApi({
@@ -265,6 +271,18 @@ const ipcRegistration = createIpcRegistration({
   onOverlayMouseEnter: () => windows.setOverlayInteractive(true),
   onOverlayMouseLeave: () => windows.setOverlayInteractive(false),
   resizeOverlay: (height) => windows.resizeOverlay(height),
+  
+  // User Model API - Primary interface for apps consuming context
+  getUserModel: () => graphApi.getUserModel(),
+  getCurrentContext: () => graphApi.getCurrentContext(),
+  getTopPeople: (limit) => graphApi.getTopPeople(limit),
+  getActiveProjects: (limit) => graphApi.getActiveProjects(limit),
+  getExpertise: (limit) => graphApi.getExpertise(limit),
+  getTaskBlocks: (limit) => graphApi.getTaskBlocks(limit),
+  getTimeline: (fromMs, toMs) => graphApi.getTimeline(fromMs, toMs),
+  getRelatedEntities: (entityId, limit) => graphApi.getRelatedEntities(entityId, limit),
+  searchEntities: (query, limit) => graphApi.searchEntities(query, limit),
+  getDaySummary: (dateMs) => graphApi.getDaySummary(dateMs),
 });
 
 async function initStore(): Promise<void> {
@@ -307,6 +325,10 @@ function startBootstrap(): void {
     elephant.setupIPC();
     updateElephantShortcut();
 
+    // Initialize user context graph
+    const apiKey = getStoreApiKey(store);
+    if (apiKey) {
+    }
     if (process.platform === 'darwin') {
       const status = systemPreferences.getMediaAccessStatus('screen');
       console.log('[Enk] Screen recording permission:', status);
@@ -324,7 +346,7 @@ function startBootstrap(): void {
       console.error('[Enk] Tesseract init failed:', err);
     }
 
-    graphApi.loadGraphFromStore();
+    graphApi.loadFullGraph();
 
     try {
       const rawActivity = store?.get('persistedActivity');
@@ -360,6 +382,12 @@ function startBootstrap(): void {
   });
   app.on('before-quit', async () => {
     graphApi.saveGraphToStore();
+    
+    // Flush user context graph
+    try {
+    } catch {
+      // best effort
+    }
 
     try {
       const combinedActivity = [...loadedActivity, ...activityLog]

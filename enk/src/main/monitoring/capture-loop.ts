@@ -1,5 +1,6 @@
 import { captureAllScreens, extractNewContent, OcrEngine, ScreenChangeTracker } from './screen-pipeline';
 import { scrubSensitiveData, textSimilarity } from '../../modules/scrub';
+import { extractVisionContext, resizeForVision, shouldRunVision, type VisionResult } from '../vision/gemini';
 
 import type { ClaudeRequestBody, ClaudeResponse, ContentSnapshot, ScamResult } from '../../types';
 
@@ -13,6 +14,7 @@ interface CreateMonitoringPipelineDeps {
   pendingSummaries: ContentSnapshot[];
   previousTexts: Record<string, string>;
   extractEntitiesFromActivity: (appName: string, title: string, url: string | null, summary: string | null) => void;
+  addEntity: (label: string, type: string, sourceContext?: string, contextHint?: string) => void;
   claudeRequest: (body: ClaudeRequestBody) => Promise<ClaudeResponse | null>;
   analyzeForScam: (scrubbedText: string, base64Screenshot: string, lowConfidence: boolean) => Promise<ScamResult | null>;
   showScamAlert: (data: ScamResult) => void;
@@ -22,6 +24,10 @@ interface CreateMonitoringPipelineDeps {
 function createMonitoringPipeline(deps: CreateMonitoringPipelineDeps) {
   let isAnalyzing = false;
   let activeThreat = false;
+  
+  // Vision state
+  let lastVisionResult: VisionResult | null = null;
+  let lastVisionTime = 0;
 
   async function generateSummaries(): Promise<void> {
     if (deps.pendingSummaries.length === 0) return;
@@ -94,6 +100,9 @@ CRITICAL: ONLY state what you can directly see in the App, Tab, URL, and Content
       deps.updateStatus('processing');
 
       let threatFound = false;
+      const geminiKey = deps.getStore()?.get('geminiKey');
+      const useVision = deps.getStore()?.get('useVisionExtraction') && geminiKey;
+      
       for (const sc of changedScreens) {
         const pngBuffer = sc.nativeImage.toPNG();
         if (!pngBuffer || pngBuffer.length < 100) {
@@ -102,6 +111,70 @@ CRITICAL: ONLY state what you can directly see in the App, Tab, URL, and Content
         }
 
         console.log(`[Enk] Screenshot captured: "${sc.name}" (${pngBuffer.length} bytes)`);
+        
+        // Vision-based extraction (Gemini 2.0 Flash)
+        const win = deps.getCurrentWindow();
+        const now = Date.now();
+        
+        if (useVision && shouldRunVision(lastVisionResult, win.app, true, now - lastVisionTime)) {
+          try {
+            const resizedBuffer = await resizeForVision(pngBuffer);
+            const base64 = resizedBuffer.toString('base64');
+            const visionResult = await extractVisionContext(base64, geminiKey);
+            
+            if (visionResult) {
+              lastVisionResult = visionResult;
+              lastVisionTime = now;
+              
+              console.log(`[Enk] Vision: "${visionResult.task}" (${visionResult.confidence})`);
+              
+              // Add entities from vision result
+              const contextHint = `vision:${now}`;
+              
+              for (const person of visionResult.people) {
+                if (person && person.length > 1) {
+                  deps.addEntity(person, 'person', win.app, contextHint);
+                }
+              }
+              
+              for (const topic of visionResult.topics) {
+                if (topic && topic.length > 2) {
+                  deps.addEntity(topic, 'topic', win.app, contextHint);
+                }
+              }
+              
+              for (const project of visionResult.projects) {
+                if (project && project.length > 2) {
+                  deps.addEntity(project, 'project', win.app, contextHint);
+                }
+              }
+              
+              // Create a high-quality snapshot from vision
+              const visionSnapshot: ContentSnapshot = {
+                timestamp: now,
+                app: visionResult.app || win.app,
+                title: win.title,
+                url: win.url,
+                text: visionResult.task,
+                fullText: visionResult.raw,
+                summary: visionResult.task, // Vision already gives us a summary
+              };
+              deps.contentSnapshots.push(visionSnapshot);
+              
+              // Extract entities from the vision summary
+              deps.extractEntitiesFromActivity(
+                visionResult.app || win.app,
+                win.title,
+                win.url,
+                visionResult.task
+              );
+            }
+          } catch (err: any) {
+            console.error('[Enk] Vision extraction failed:', err.message);
+          }
+        }
+        
+        // OCR fallback (or for scam detection)
         const ocr = await deps.ocrEngine.run(pngBuffer);
         const lowConfidence = ocr.confidence < 70;
         const scrubbedText = scrubSensitiveData(ocr.text);

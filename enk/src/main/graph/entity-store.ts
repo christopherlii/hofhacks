@@ -58,10 +58,15 @@ function findCanonicalNode(
   // Normalize underscores to spaces for comparison
   const nSpaced = n.replace(/_/g, ' ');
   
-  // Types that can be deduplicated together (everything except person and app)
+  // Types that can be deduplicated together
+  // Identity types (trait, skill, preference, behavior, belief, pattern) only dedupe within same type
+  // Person and app only dedupe within same type
+  // Content types can dedupe against each other
+  const identityTypes = new Set(['trait', 'skill', 'preference', 'behavior', 'belief', 'pattern']);
   const typesToCheck: EntityNode['type'][] = 
     type === 'person' ? ['person'] : 
     type === 'app' ? ['app'] :
+    identityTypes.has(type) ? [type] : // Identity types only match same type
     // Allow place, topic, project, content, goal to dedupe against each other
     ['place', 'topic', 'project', 'content', 'goal'];
   

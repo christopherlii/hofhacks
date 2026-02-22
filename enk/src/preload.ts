@@ -3,8 +3,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 export interface EnkSettings {
   anthropicKey: string;
   niaKey: string;
+  geminiKey?: string;
   enabled: boolean;
   scamDetection: boolean;
+  useVisionExtraction?: boolean;
   firstLaunch: boolean;
   apiKey?: string;
   guardianEnabled?: boolean;
@@ -88,6 +90,41 @@ contextBridge.exposeInMainWorld('enk', {
   resizeOverlay: (height: number): void => ipcRenderer.send('resize-overlay', height),
   overlayMouseEnter: (): void => ipcRenderer.send('overlay-mouse-enter'),
   overlayMouseLeave: (): void => ipcRenderer.send('overlay-mouse-leave'),
+
+  // === User Model API ===
+  // Primary interface for apps consuming context
+  
+  /** Get complete user model - who they work with, what they're working on, expertise, patterns */
+  getUserModel: (): Promise<any> => ipcRenderer.invoke('get-user-model'),
+  
+  /** Get current context - what's happening right now */
+  getCurrentContext: (): Promise<any> => ipcRenderer.invoke('get-current-context'),
+  
+  /** Get top people the user interacts with */
+  getTopPeople: (limit?: number): Promise<any[]> => ipcRenderer.invoke('get-top-people', limit),
+  
+  /** Get active projects */
+  getActiveProjects: (limit?: number): Promise<any[]> => ipcRenderer.invoke('get-active-projects', limit),
+  
+  /** Get user's expertise (skills, tools) */
+  getExpertise: (limit?: number): Promise<any[]> => ipcRenderer.invoke('get-expertise', limit),
+  
+  /** Get task blocks - activity grouped into coherent work sessions */
+  getTaskBlocks: (limit?: number): Promise<any[]> => ipcRenderer.invoke('get-task-blocks', limit),
+  
+  /** Get timeline of tasks for a date range */
+  getTimeline: (fromMs: number, toMs: number): Promise<any[]> => ipcRenderer.invoke('get-timeline', fromMs, toMs),
+  
+  /** Find entities related to a given entity */
+  getRelatedEntities: (entityId: string, limit?: number): Promise<any[]> => 
+    ipcRenderer.invoke('get-related-entities', entityId, limit),
+  
+  /** Search entities by query */
+  searchEntities: (query: string, limit?: number): Promise<any[]> => 
+    ipcRenderer.invoke('search-entities', query, limit),
+  
+  /** Get a summary of the user's day */
+  getDaySummary: (dateMs?: number): Promise<any> => ipcRenderer.invoke('get-day-summary', dateMs),
 
   // Elephant overlay IPC (used by the modular/stashed UI flow)
   elephantDismiss: (): void => ipcRenderer.send('elephant-dismiss'),
