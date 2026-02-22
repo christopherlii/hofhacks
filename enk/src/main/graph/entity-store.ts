@@ -1,6 +1,8 @@
 import type { EntityEdge, EntityNode } from '../../types';
 
-const CONTEXT_HINT_MAX = 100;
+const CONTEXT_WINDOW_MS = 30_000; // 30 seconds - entities must appear within this window to be connected
+const MIN_COOCCURRENCE_FOR_EDGE = 2; // Require at least 2 co-occurrences before creating an edge
+const MAX_RECENT_CONTEXTS = 50; // Smaller window = tighter connections
 
 const SKIP_ENTITIES = new Set([
   '',
@@ -27,13 +29,24 @@ const SKIP_ENTITIES = new Set([
   'untitled',
   'loading',
   'about:blank',
+  'unknown',
+  'user',
+  'admin',
+  'home',
+  'search',
+  'settings',
+  'page',
+  'document',
 ]);
 
 function normalizeEntity(raw: string): string {
   return raw.trim().toLowerCase().replace(/^@+/, '').replace(/[^\w\s@#-]/g, '').trim();
 }
 
-/** Find canonical node for deduplication. Handles person (Ben→Benjamin Xu), place/topic (@NYU→NYU), project. */
+/** 
+ * Find canonical node for deduplication. 
+ * Now checks ACROSS types for place/topic/project ambiguity.
+ */
 function findCanonicalNode(
   nodes: Map<string, EntityNode>,
   label: string,
@@ -41,30 +54,59 @@ function findCanonicalNode(
 ): string | null {
   const n = normalizeEntity(label);
   if (n.length < 2) return null;
-  const typesToCheck: EntityNode['type'][] = type === 'person' ? ['person'] : type === 'place' || type === 'topic' ? ['place', 'topic'] : type === 'project' ? ['project'] : [];
-  let best: { id: string; len: number } | null = null;
+  
+  // Types that can be deduplicated together
+  const typesToCheck: EntityNode['type'][] = 
+    type === 'person' ? ['person'] : 
+    type === 'app' ? ['app'] :
+    // Allow place, topic, and project to dedupe against each other
+    ['place', 'topic', 'project'];
+  
+  let best: { id: string; len: number; weight: number } | null = null;
+  
   for (const node of nodes.values()) {
     if (!typesToCheck.includes(node.type)) continue;
     const nodeNorm = normalizeEntity(node.label);
+    
+    // Exact match - always prefer
     if (nodeNorm === n) return node.id;
+    
     const [shorter, longer] = n.length <= nodeNorm.length ? [n, nodeNorm] : [nodeNorm, n];
     const isMatch =
       longer.startsWith(shorter) ||
       longer.includes(` ${shorter}`) ||
       longer.includes(`${shorter} `) ||
-      shorter.length >= 4 && longer.includes(shorter);
+      (shorter.length >= 4 && longer.includes(shorter));
+    
     if (isMatch) {
       const len = nodeNorm.length;
-      if (!best || len > best.len) best = { id: node.id, len };
+      // Prefer longer labels and higher weights
+      const score = len * 10 + node.weight;
+      if (!best || score > best.len * 10 + best.weight) {
+        best = { id: node.id, len, weight: node.weight };
+      }
     }
   }
   return best?.id ?? null;
 }
 
+interface RecentContext {
+  entity: string;
+  contextKey: string; // Unique key for the context (app + window title hash)
+  timestamp: number;
+}
+
+// Track pending edges - only promote to real edges after threshold
+interface PendingEdge {
+  count: number;
+  lastSeen: number;
+}
+
 class EntityStore {
   readonly nodes: Map<string, EntityNode> = new Map();
   readonly edges: Map<string, EntityEdge> = new Map();
-  readonly recentContexts: { entity: string; contextHint: string }[] = [];
+  private readonly recentContexts: RecentContext[] = [];
+  private readonly pendingEdges: Map<string, PendingEdge> = new Map();
 
   addEntity(
     label: string,
@@ -75,6 +117,9 @@ class EntityStore {
   ): void {
     const normalized = normalizeEntity(label);
     if (SKIP_ENTITIES.has(normalized) || normalized.length < 2) return;
+    
+    // Skip if it looks like a file path or code artifact
+    if (normalized.includes('/') || normalized.includes('\\') || normalized.match(/\.[a-z]{2,4}$/)) return;
 
     const canonicalId = findCanonicalNode(this.nodes, label, type);
     const id = canonicalId ?? `${type}:${normalized}`;
@@ -85,7 +130,10 @@ class EntityStore {
     if (existing) {
       existing.weight++;
       existing.lastSeen = now;
-      if (!existing.contexts.includes(context)) existing.contexts.push(context);
+      if (!existing.contexts.includes(context)) {
+        existing.contexts = existing.contexts.slice(-9); // Keep last 10 contexts
+        existing.contexts.push(context);
+      }
     } else {
       this.nodes.set(id, {
         id,
@@ -100,9 +148,16 @@ class EntityStore {
     }
 
     if (contextHintForEdge && contextHintForEdge.length > 5) {
-      this.recentContexts.push({ entity: id, contextHint: contextHintForEdge });
-      this.updateCoOccurrences(id, contextHintForEdge);
+      // Create a unique context key from the hint
+      const contextKey = this.hashContext(contextHintForEdge);
+      this.updateCoOccurrences(id, contextKey, now);
     }
+  }
+
+  private hashContext(hint: string): string {
+    // Simple hash to group similar contexts
+    const cleaned = hint.replace(/ai:|timestamp:\d+/g, '').trim().slice(0, 100);
+    return cleaned;
   }
 
   pruneOrphanedEdges(): void {
@@ -117,29 +172,61 @@ class EntityStore {
     }
   }
 
-  /** Clear all entities and edges. */
   reset(): void {
     this.nodes.clear();
     this.edges.clear();
     this.recentContexts.length = 0;
+    this.pendingEdges.clear();
   }
 
-  private updateCoOccurrences(newEntityId: string, newContextHint: string): void {
+  private updateCoOccurrences(newEntityId: string, contextKey: string, timestamp: number): void {
+    const windowStart = timestamp - CONTEXT_WINDOW_MS;
+    
+    // Find entities that appeared in similar contexts within the time window
     for (const entry of this.recentContexts) {
       if (entry.entity === newEntityId) continue;
-      if (entry.contextHint !== newContextHint) continue;
+      if (entry.timestamp < windowStart) continue;
+      
+      // Must be in the same or very similar context
+      if (entry.contextKey !== contextKey) continue;
 
       const edgeKey = [entry.entity, newEntityId].sort().join('↔');
-      const existing = this.edges.get(edgeKey);
-      if (existing) {
-        existing.weight++;
+      
+      // Track pending edge
+      const pending = this.pendingEdges.get(edgeKey);
+      if (pending) {
+        pending.count++;
+        pending.lastSeen = timestamp;
+        
+        // Promote to real edge if threshold met
+        if (pending.count >= MIN_COOCCURRENCE_FOR_EDGE && !this.edges.has(edgeKey)) {
+          this.edges.set(edgeKey, { 
+            source: [entry.entity, newEntityId].sort()[0], 
+            target: [entry.entity, newEntityId].sort()[1], 
+            weight: pending.count 
+          });
+        } else if (this.edges.has(edgeKey)) {
+          this.edges.get(edgeKey)!.weight++;
+        }
       } else {
-        this.edges.set(edgeKey, { source: entry.entity, target: newEntityId, weight: 1 });
+        this.pendingEdges.set(edgeKey, { count: 1, lastSeen: timestamp });
       }
     }
 
-    while (this.recentContexts.length > CONTEXT_HINT_MAX) {
+    // Add to recent contexts
+    this.recentContexts.push({ entity: newEntityId, contextKey, timestamp });
+    
+    // Prune old contexts
+    while (this.recentContexts.length > MAX_RECENT_CONTEXTS) {
       this.recentContexts.shift();
+    }
+    
+    // Prune old pending edges
+    const pendingCutoff = timestamp - 24 * 60 * 60 * 1000; // 24 hours
+    for (const [key, pending] of this.pendingEdges) {
+      if (pending.lastSeen < pendingCutoff && pending.count < MIN_COOCCURRENCE_FOR_EDGE) {
+        this.pendingEdges.delete(key);
+      }
     }
   }
 
@@ -148,20 +235,24 @@ class EntityStore {
     const fromId = this.findNodeByLabel(fromLabel);
     const toId = this.findNodeByLabel(toLabel);
     if (!fromId || !toId || fromId === toId) return;
+    
     const [a, b] = [fromId, toId].sort();
     const edgeKey = `${a}↔${b}`;
     const existing = this.edges.get(edgeKey);
+    
     if (existing) {
-      existing.weight++;
+      existing.weight += 2; // AI-extracted relations get bonus weight
       if (relation && !existing.relation) existing.relation = relation;
     } else {
-      this.edges.set(edgeKey, { source: a, target: b, weight: 1, relation });
+      // AI relations bypass the pending threshold
+      this.edges.set(edgeKey, { source: a, target: b, weight: 2, relation });
     }
   }
 
   private findNodeByLabel(label: string): string | null {
     const n = normalizeEntity(label);
     if (n.length < 2) return null;
+    
     let fallback: string | null = null;
     for (const node of this.nodes.values()) {
       const nodeNorm = normalizeEntity(node.label);
@@ -171,6 +262,41 @@ class EntityStore {
       }
     }
     return fallback;
+  }
+
+  /** Decay edge weights over time */
+  decayEdges(cutoffDays: number = 7): number {
+    const cutoff = Date.now() - cutoffDays * 24 * 60 * 60 * 1000;
+    let removed = 0;
+    
+    for (const [key, edge] of this.edges) {
+      // Decay edges without semantic relations more aggressively
+      const decayThreshold = edge.relation ? 1 : 2;
+      if (edge.weight <= decayThreshold) {
+        // Check if both nodes are stale
+        const sourceNode = this.nodes.get(edge.source);
+        const targetNode = this.nodes.get(edge.target);
+        if ((!sourceNode || sourceNode.lastSeen < cutoff) && 
+            (!targetNode || targetNode.lastSeen < cutoff)) {
+          this.edges.delete(key);
+          removed++;
+        }
+      }
+    }
+    
+    return removed;
+  }
+
+  /** Get statistics about the graph */
+  getStats(): { nodes: number; edges: number; pending: number; avgWeight: number } {
+    const weights = Array.from(this.edges.values()).map(e => e.weight);
+    const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
+    return {
+      nodes: this.nodes.size,
+      edges: this.edges.size,
+      pending: this.pendingEdges.size,
+      avgWeight: Math.round(avgWeight * 100) / 100,
+    };
   }
 }
 

@@ -4,22 +4,28 @@ import type { EntityStore } from './entity-store';
 
 const GRAPH_DECAY_STALE_DAYS = 7;
 const GRAPH_DECAY_MIN_WEIGHT = 2;
+const EDGE_DECAY_DAYS = 5;
 
 function decayGraph(store: EntityStore, saveGraphToStore: () => void): void {
   const cutoff = Date.now() - GRAPH_DECAY_STALE_DAYS * 24 * 60 * 60 * 1000;
-  let pruned = 0;
+  let prunedNodes = 0;
 
   for (const [id, node] of store.nodes) {
-    if (node.weight < GRAPH_DECAY_MIN_WEIGHT && node.lastSeen < cutoff) {
+    // More aggressive pruning for low-weight, unverified nodes
+    const minWeight = node.verified ? 1 : GRAPH_DECAY_MIN_WEIGHT;
+    if (node.weight < minWeight && node.lastSeen < cutoff) {
       store.nodes.delete(id);
-      pruned++;
+      prunedNodes++;
     }
   }
 
+  // Also decay edges
+  const prunedEdges = store.decayEdges(EDGE_DECAY_DAYS);
+
   store.pruneOrphanedEdges();
 
-  if (pruned > 0) {
-    console.log(`[Enk] Graph decay: pruned ${pruned} stale entities`);
+  if (prunedNodes > 0 || prunedEdges > 0) {
+    console.log(`[Enk] Graph decay: pruned ${prunedNodes} nodes, ${prunedEdges} edges`);
     saveGraphToStore();
   }
 }
@@ -35,10 +41,11 @@ async function buildNiaEdges(
 
   nia.setApiKey(store.get('niaKey') as string);
 
+  // Only use verified or high-weight entities
   const topEntities = Array.from(entityStore.nodes.values())
-    .filter((node) => node.type !== 'app')
+    .filter((node) => node.type !== 'app' && (node.verified || node.weight >= 3))
     .sort((a, b) => b.weight - a.weight)
-    .slice(0, 25);
+    .slice(0, 20);
 
   if (topEntities.length < 2) return;
 
@@ -46,7 +53,7 @@ async function buildNiaEdges(
 
   for (const node of topEntities) {
     try {
-      const results = await withTimeout(nia.semanticSearch(node.label, { limit: 5 }), 3000);
+      const results = await withTimeout(nia.semanticSearch(node.label, { limit: 3 }), 3000);
       if (!results || results.length === 0) continue;
 
       for (const context of results) {
@@ -64,7 +71,7 @@ async function buildNiaEdges(
   let added = 0;
   for (const [, entityIds] of contextToEntities) {
     const ids = Array.from(entityIds);
-    if (ids.length < 2) continue;
+    if (ids.length < 2 || ids.length > 5) continue; // Skip if too many entities share context (too generic)
 
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
@@ -74,7 +81,7 @@ async function buildNiaEdges(
         if (existing) {
           existing.weight++;
         } else {
-          entityStore.edges.set(edgeKey, { source: a, target: b, weight: 1 });
+          entityStore.edges.set(edgeKey, { source: a, target: b, weight: 1, relation: 'nia_context' });
           added++;
         }
       }
@@ -101,29 +108,51 @@ async function cleanupGraph(
   const unverified = Array.from(entityStore.nodes.values())
     .filter((node) => !node.verified && node.type !== 'app')
     .sort((a, b) => b.weight - a.weight)
-    .slice(0, 60);
+    .slice(0, 50);
 
   if (unverified.length === 0) return { nodesRemoved: 0, edgesRemoved: 0 };
 
   const entityList = unverified
     .map(
       (node) =>
-        `${node.id} | "${node.label}" | ${node.type} | weight:${node.weight} | contexts:[${node.contexts.join(',')}]`
+        `${node.id} | "${node.label}" | ${node.type} | weight:${node.weight} | contexts:[${node.contexts.slice(-3).join(',')}]`
     )
     .join('\n');
 
   const data = await claudeRequest({
     model: 'claude-haiku-4-5',
-    max_tokens: 500,
-    system: `You classify entities from a personal computer activity graph as signal or noise.
+    max_tokens: 600,
+    system: `You classify entities from a personal computer activity graph as SIGNAL or NOISE.
 
-SIGNAL = personally meaningful: real people, specific topics of interest, projects, specific content (videos/articles), real places, goals (vacations, plans).
-NOISE = UI artifacts, generic words ("loading", "untitled", "new tab"), system processes, navigation elements, partial words, single letters, app names as topics, placeholder text, roles ("user", "admin").
+SIGNAL = personally meaningful entities that a user would recognize and care about:
+- Real people they know (names, usernames)
+- Specific projects they're working on
+- Topics they're genuinely interested in (not just browsed once)
+- Places meaningful to them
+- Goals or plans
+- Specific content they engaged with deeply
 
-Return JSON: {"keep": ["entity_id", ...], "remove": ["entity_id", ...], "merge": [{"into": "entity_id", "from": ["entity_id", ...]}, ...]}
+NOISE = artifacts that shouldn't be in a personal knowledge graph:
+- UI elements, generic words ("loading", "untitled", "page 1")
+- System/app names when not relevant
+- Partial words, typos, OCR errors
+- Generic roles ("user", "admin", "guest")
+- Navigation elements
+- Duplicate entities (same thing with different casing/spelling)
+- Overly broad topics ("technology", "internet", "news")
 
-For merge: combine duplicate/similar entities (e.g. "Japan" and "japan travel" → keep the more descriptive one; "Ben" and "Benjamin Xu" → keep "Benjamin Xu").
-Be aggressive about removing noise. When in doubt, remove.`,
+Return JSON:
+{
+  "keep": ["entity_id", ...],
+  "remove": ["entity_id", ...],
+  "merge": [{"into": "entity_id", "from": ["entity_id", ...]}]
+}
+
+Rules:
+- Be AGGRESSIVE about removing noise - when in doubt, remove
+- For merge: combine duplicates (e.g., "NYU" and "@NYU" → keep "NYU"; "Ben" and "Benjamin Xu" → keep "Benjamin Xu")
+- Prefer more descriptive labels when merging
+- If an entity appears in only 1 context with low weight, it's probably noise`,
     messages: [{ role: 'user', content: entityList }],
   });
 
@@ -169,10 +198,36 @@ Be aggressive about removing noise. When in doubt, remove.`,
 
           target.weight += source.weight;
           for (const context of source.contexts) {
-            if (!target.contexts.includes(context)) target.contexts.push(context);
+            if (!target.contexts.includes(context)) {
+              target.contexts = target.contexts.slice(-9);
+              target.contexts.push(context);
+            }
           }
           if (source.firstSeen < target.firstSeen) target.firstSeen = source.firstSeen;
           if (source.lastSeen > target.lastSeen) target.lastSeen = source.lastSeen;
+
+          // Transfer edges from merged node to target
+          for (const [edgeKey, edge] of entityStore.edges) {
+            if (edge.source === fromId) {
+              entityStore.edges.delete(edgeKey);
+              const newKey = [target.id, edge.target].sort().join('↔');
+              const existing = entityStore.edges.get(newKey);
+              if (existing) {
+                existing.weight += edge.weight;
+              } else if (target.id !== edge.target) {
+                entityStore.edges.set(newKey, { ...edge, source: target.id });
+              }
+            } else if (edge.target === fromId) {
+              entityStore.edges.delete(edgeKey);
+              const newKey = [edge.source, target.id].sort().join('↔');
+              const existing = entityStore.edges.get(newKey);
+              if (existing) {
+                existing.weight += edge.weight;
+              } else if (edge.source !== target.id) {
+                entityStore.edges.set(newKey, { ...edge, target: target.id });
+              }
+            }
+          }
 
           entityStore.nodes.delete(fromId);
           merged++;
@@ -185,12 +240,14 @@ Be aggressive about removing noise. When in doubt, remove.`,
     entityStore.pruneOrphanedEdges();
 
     if (removed > 0 || merged > 0) {
-      console.log(`[Enk] Graph cleanup: removed ${removed}, merged ${merged}. ${entityStore.nodes.size} entities remain.`);
+      const stats = entityStore.getStats();
+      console.log(`[Enk] Graph cleanup: removed ${removed}, merged ${merged}. Stats: ${JSON.stringify(stats)}`);
       saveGraphToStore();
     }
   } catch (err: any) {
     console.error('[Enk] Graph cleanup parse error:', err.message);
   }
+  
   const nodesRemoved = beforeNodes - entityStore.nodes.size;
   const edgesRemoved = beforeEdges - entityStore.edges.size;
   return { nodesRemoved, edgesRemoved };
