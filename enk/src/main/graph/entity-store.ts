@@ -135,9 +135,13 @@ class EntityStore {
   ): void {
     const normalized = normalizeEntity(label);
     if (SKIP_ENTITIES.has(normalized) || normalized.length < 2) return;
-    
+
     // Skip if it looks like a file path or code artifact
     if (normalized.includes('/') || normalized.includes('\\') || normalized.match(/\.[a-z]{2,4}$/)) return;
+
+    // Skip git branch names, PR titles, technical identifiers (snake_case with 3+ segments)
+    const underscores = (label.match(/_/g) || []).length;
+    if (underscores >= 3 && label.length > 18 && /^[a-z0-9_]+$/i.test(label.replace(/-/g, '_'))) return;
 
     const canonicalId = findCanonicalNode(this.nodes, label, type);
     const id = canonicalId ?? `${type}:${normalized}`;

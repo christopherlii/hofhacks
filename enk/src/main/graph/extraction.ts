@@ -197,6 +197,8 @@ SKIP:
 - Single words that are too vague
 - Anything that looks like OCR noise
 - Generic terms ("user", "page", "document")
+- Git branch names (e.g. remove_edge_labels_and_filter_same-entity_edges)
+- PR titles, technical identifiers, snake_case code names
 
 RELATION TYPES:
 - working_on: Person actively working on a project

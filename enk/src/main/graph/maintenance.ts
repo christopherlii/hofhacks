@@ -141,6 +141,8 @@ NOISE = artifacts that shouldn't be in a personal knowledge graph:
 - Navigation elements
 - Duplicate entities (same thing with different casing/spelling)
 - Overly broad topics ("technology", "internet", "news")
+- Git branch names, PR titles (e.g. remove_edge_labels_and_filter_same-entity_edges)
+- Technical identifiers with many underscores (snake_case code names)
 
 Return JSON:
 {
