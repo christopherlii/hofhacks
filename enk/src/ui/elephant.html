@@ -670,11 +670,11 @@
         return;
       }
 
-      const boundedIndex = Math.max(0, Math.min(index, buttons.length - 1));
+      const boundedIndex = index < 0 ? -1 : Math.min(index, buttons.length - 1);
       workflowSelectedIndex = boundedIndex;
 
       buttons.forEach((btn, i) => {
-        btn.classList.toggle('selected', i === boundedIndex);
+        btn.classList.toggle('selected', boundedIndex >= 0 && i === boundedIndex);
       });
     }
 
@@ -703,10 +703,10 @@
       const visibleButtons = getVisibleSuggestionButtons();
       if (visibleButtons.length === 0) {
         workflowSelectedIndex = -1;
-      } else if (workflowSelectedIndex < 0 || workflowSelectedIndex >= visibleButtons.length) {
-        setSelectedSuggestion(0);
-      } else {
+      } else if (workflowSelectedIndex >= 0 && workflowSelectedIndex < visibleButtons.length) {
         setSelectedSuggestion(workflowSelectedIndex);
+      } else {
+        setSelectedSuggestion(-1);
       }
 
       sendBtn.disabled = visibleButtons.length === 0 && !query;
@@ -992,12 +992,14 @@
 
       for (const button of buttons) {
         button.addEventListener('click', () => {
+          const visibleButtons = getVisibleSuggestionButtons();
+          const idx = visibleButtons.indexOf(button);
+          if (idx >= 0) setSelectedSuggestion(idx);
           void runSuggestionButton(button);
         });
       }
 
       applySuggestionFilter();
-      setSelectedSuggestion(0);
 
       if (data.context) {
         contextBadge.textContent = data.context.app || 'Gmail';
