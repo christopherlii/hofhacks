@@ -229,14 +229,15 @@ CRITICAL: ONLY state what you can directly see in the App, Tab, URL, and Content
           }
         }
       }
-
-      if (threatFound) {
-        activeThreat = true;
-        deps.updateStatus('threat');
-      } else {
-        if (activeThreat) deps.dismissAlert();
-        activeThreat = false;
-        deps.updateStatus('active');
+      if (false) {  
+        if (threatFound) {
+          activeThreat = true;
+          deps.updateStatus('threat');
+        } else {
+          if (activeThreat) deps.dismissAlert();
+          activeThreat = false;
+          deps.updateStatus('active');
+        }
       }
     } catch (err: any) {
       console.error('[Enk] Capture loop error:', err);

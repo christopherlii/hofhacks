@@ -29,7 +29,9 @@ let store: any;
 
 const windows = new AppWindows();
 const nia = new NiaClient('');
-const openClaw = new OpenClawClient();
+const openClaw = new OpenClawClient({
+  token: '693761285ac2b96f7d2bd08fe059416cb05f7a9b1324b03a'
+});
 const ocrEngine = new OcrEngine();
 const screenChangeTracker = new ScreenChangeTracker();
 

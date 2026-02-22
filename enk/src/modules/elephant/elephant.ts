@@ -87,21 +87,35 @@ async function textActor(action: SuggestionAction, context: NowContext): Promise
 }
 
 async function actionActor(action: SuggestionAction, context: NowContext): Promise<ActorResult> {
+  const apiKey = getApiKey();
+  if (!apiKey) return { ok: false, type: 'text', message: 'No API key configured.' };
+
   try {
-    const question = [
-      `Action: ${action.type}`,
-      ...Object.entries(action.payload).map(([k, v]) => `${k}: ${v}`),
-    ].filter(Boolean).join('\n');
+    if (action.type === 'send_reply' || action.type === 'compose_message') {
+      // Step 1: Local Claude generates the content
+      console.log('[Enk] Drafting email...', action.payload.to, context.visibleText?.slice(0, 1000));
+      const draft = await claudeTextRequest(apiKey, {
+        model: 'claude-haiku-4-5',
+        max_tokens: 500,
+        system: TEXT_ACTOR_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `Draft a reply for this.\nTo: ${action.payload.to}\nContext: ${context.visibleText?.slice(0, 1000)}`
+        }]
+      });
+      
+      const emailText = draft;
+      console.log('[Enk] Email text:', emailText);
+      
+      // Step 2: OpenClaw sends it
+      const response = await openClawClient.ask(
+        'Read the email thread visible in Gmail and draft an appropriate reply. Use browser controls to put the draft into the reply field but do not click send.'
+      );
 
-    const response = await openClawClient.analyzeActivity({
-      app: context.activeApp || '',
-      title: context.windowTitle || '',
-      url: context.url || undefined,
-      content: context.visibleText || undefined,
-      question,
-    });
+      return { ok: true, type: 'action', message: response };
+    }
 
-    return { ok: true, type: 'action', message: response };
+    return { ok: false, type: 'action', message: 'Invalid action type.' };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error('[Enk] OpenClaw failed:', errMsg);
