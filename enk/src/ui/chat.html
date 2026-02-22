@@ -55,9 +55,9 @@
   --sidebar-width: 200px;
   --header-height: 52px;
   
-  --transition-fast: 0.1s ease;
-  --transition: 0.2s ease;
-  --transition-slow: 0.3s ease;
+  --transition-fast: 0.2s ease;
+  --transition: 0.35s ease;
+  --transition-slow: 0.5s ease;
 }
 
 * { 
@@ -848,6 +848,15 @@ body {
   border-color: var(--border-strong);
 }
 
+.graph-chip-expand {
+  font-size: 8px;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.graph-chip-wrapper.expanded .graph-chip-expand {
+  transform: rotate(-180deg);
+}
+
 .graph-time-btn {
   font-size: 11px; 
   padding: 4px 8px; 
@@ -873,6 +882,22 @@ body {
 }
 
 /* ─── Graph Canvas ─── */
+#graphCanvas,
+#graphCanvas:focus,
+#graphCanvas:focus-within,
+#graphContainer,
+#graphContainer:focus,
+#graphContainer canvas,
+#graphContainer canvas:focus,
+#graphContainer .vis-network,
+#graphContainer .vis-network:focus,
+#graphContainer .vis-active {
+  outline: none !important;
+  outline-width: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .graph-canvas-container {
   flex: 1;
   position: relative;
@@ -945,8 +970,48 @@ body {
 }
 
 .inspector-section { 
-  margin-bottom: 16px; 
+  margin-bottom: 18px; 
 }
+
+.inspector-detail-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.inspector-entity-card {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+
+.inspector-entity-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.inspector-metrics-row {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.inspector-metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inspector-metric strong { color: var(--text-primary); }
 
 .inspector-section-title {
   font-size: 10px; 
@@ -960,19 +1025,23 @@ body {
 .inspector-badge {
   display: inline-block; 
   font-size: 10px; 
-  padding: 2px 6px; 
+  padding: 3px 8px; 
   border-radius: var(--radius-xs);
   font-weight: 600; 
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
 }
 
 .inspector-activity-item {
   font-size: 12px; 
   color: var(--text-secondary); 
-  padding: 6px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   border-bottom: 1px solid var(--border); 
-  line-height: 1.4;
+  line-height: 1.5;
+  transition: var(--transition);
+}
+
+.inspector-activity-item:hover {
+  background: var(--bg-hover);
 }
 
 .inspector-activity-item:last-child { 
@@ -982,44 +1051,84 @@ body {
 .inspector-connection {
   display: inline-flex; 
   align-items: center; 
-  gap: 4px; 
-  font-size: 11px;
-  padding: 4px 8px; 
-  border-radius: var(--radius-xs); 
+  gap: 6px; 
+  font-size: 12px;
+  padding: 8px 12px; 
+  border-radius: var(--radius-sm); 
   background: var(--bg-tertiary);
   border: 1px solid var(--border); 
-  margin: 2px 2px 2px 0; 
+  margin: 4px 6px 4px 0; 
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: var(--transition);
   font-weight: 500;
   color: var(--text-secondary);
 }
 
 .inspector-connection:hover { 
   border-color: var(--accent); 
+  background: var(--accent-muted);
   color: var(--text-primary);
 }
 
 .inspector-connection .conn-dot {
-  width: 6px; 
-  height: 6px; 
-  border-radius: 2px; 
+  width: 8px; 
+  height: 8px; 
+  border-radius: 4px; 
   flex-shrink: 0;
+}
+
+.inspector-action-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.inspector-action-btn:hover {
+  background: var(--accent-hover);
+}
+
+.inspector-action-btn.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.inspector-action-btn.secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* ─── Entity Filter Panel ─── */
 .entity-filter-panel {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 8px;
-  padding: 10px;
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding: 0 10px;
   background: var(--bg-primary);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  display: none;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
 }
 
-.entity-filter-panel.visible { display: block; }
+.entity-filter-panel.visible {
+  max-height: 220px;
+  margin-top: 8px;
+  padding: 10px;
+  opacity: 1;
+  overflow-y: auto;
+  border-color: var(--border);
+}
 
 .entity-filter-item {
   display: flex;
@@ -1042,6 +1151,69 @@ body {
   color: var(--text-primary);
 }
 
+.entity-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.entity-filter-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.entity-filter-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.entity-filter-btn {
+  font-size: 10px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.entity-filter-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.entity-filter-item .entity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.entity-filter-item .entity-weight {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.entity-filter-item .importance-high { font-weight: 600; color: var(--text-primary); }
+.entity-filter-item .importance-medium { font-weight: 500; color: var(--text-secondary); }
+.entity-filter-item .importance-low { font-weight: 400; color: var(--text-muted); }
+
+.entity-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* ─── Scrollbars ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1056,8 +1228,8 @@ body {
 /* ─── Smooth transitions globally ─── */
 *, *::before, *::after {
   transition-property: background-color, border-color, color, opacity, transform, box-shadow;
-  transition-duration: 0.15s;
-  transition-timing-function: ease;
+  transition-duration: 0.3s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Exclude certain properties from global transition */
@@ -1250,7 +1422,7 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             <span id="graphNodeCount" style="font-size:11px;color:var(--text-muted);"></span>
             <button class="action-btn" id="refreshGraphBtn" style="margin-left:auto;font-size:11px;padding:4px 10px;">Refresh</button>
           </div>
-          <div id="graphCanvas" style="flex:1;position:relative;margin:0 8px 8px 16px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border);overflow:hidden;">
+          <div id="graphCanvas" style="flex:1;position:relative;margin:0 8px 8px 16px;overflow:hidden;">
             <div id="graphContainer" style="width:100%;height:100%;"></div>
             <!-- Zoom indicator -->
             <div id="graphZoomIndicator" style="position:absolute;bottom:10px;right:10px;padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.85);border:1px solid rgba(148,163,184,0.25);font-size:11px;color:var(--text-muted);pointer-events:none;z-index:50;">100%</div>
@@ -1784,6 +1956,7 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
     let graphEdgesDS = null;
     let graphRawData = null;
     let selectedNodes = new Set();
+    let applyFocusDimmingFn = null;
     const activeTypeFilters = new Set(['person','topic','content','project','place','goal']);
     let activeTimeFilter = 0;
     let searchQuery = '';
@@ -1912,21 +2085,24 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
       if (!d) { detail.innerHTML = '<div style="color:var(--text-muted);">Node not found</div>'; return; }
 
       const color = TYPE_COLORS[d.type] || '#64748b';
-      let html = `<div class="inspector-section">
-        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">${d.label}</div>
-        <span class="inspector-badge" style="background:${color};color:#0f172a;">${d.type}</span>
-        ${d.verified ? '<span style="color:#4ade80;font-size:10px;margin-left:4px;font-weight:500;">&#10003; Verified</span>' : '<span style="color:var(--text-muted);font-size:10px;margin-left:4px;">Unverified</span>'}
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-          ${d.mentions} mentions &middot; ${(d.contexts || []).length} context${(d.contexts || []).length !== 1 ? 's' : ''} &middot; since ${fmtTime(d.firstSeen)}
-        </div>
-        ${(d.contexts || []).length > 0 ? '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Seen in: ' + d.contexts.join(', ') + '</div>' : ''}
-      </div>`;
+      let html = `<div class="inspector-detail-header">Entity Details</div>
+        <div class="inspector-entity-card">
+          <div class="inspector-entity-title">${escapeHtml(d.label)}</div>
+          <span class="inspector-badge" style="background:${color};color:#0f172a;">${d.type}</span>
+          ${d.verified ? '<span style="color:#4ade80;font-size:11px;margin-left:6px;font-weight:500;">&#10003; Verified</span>' : '<span style="color:var(--text-muted);font-size:11px;margin-left:6px;">Unverified</span>'}
+          <div class="inspector-metrics-row">
+            <span class="inspector-metric"><strong>${d.mentions}</strong> mentions</span>
+            <span class="inspector-metric"><strong>${(d.contexts || []).length}</strong> context${(d.contexts || []).length !== 1 ? 's' : ''}</span>
+            <span class="inspector-metric">since ${fmtTime(d.firstSeen)}</span>
+          </div>
+          ${(d.contexts || []).length > 0 ? '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Seen in: ' + escapeHtml(d.contexts.join(', ')) + '</div>' : ''}
+        </div>`;
 
       if (d.connections && d.connections.length > 0) {
         html += `<div class="inspector-section">
           <div class="inspector-section-title">Connected To</div>
           <div style="display:flex;flex-wrap:wrap;">
-            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${c.id}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${c.label} <span style="color:var(--text-muted)">${c.coOccurrences}x</span>${c.relation ? `<span style="color:var(--accent);font-size:10px;margin-left:4px">(${c.relation.replace(/_/g, ' ')})</span>` : ''}</span>`).join('')}
+            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${escapeHtml(c.id)}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${escapeHtml(c.label)} <span style="color:var(--text-muted);font-size:11px;">${c.coOccurrences}x</span>${c.relation ? `<span style="color:var(--accent);font-size:10px;margin-left:4px">(${escapeHtml(c.relation.replace(/_/g, ' '))})</span>` : ''}</span>`).join('')}
           </div>
         </div>`;
       }
@@ -1999,17 +2175,22 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
       const srcColor = TYPE_COLORS[d.source.type] || '#64748b';
       const tgtColor = TYPE_COLORS[d.target.type] || '#64748b';
 
-      const relationStr = d.relation ? ` &middot; <span style="color:var(--accent);">${d.relation.replace(/_/g, ' ')}</span>` : '';
-      let html = `<div class="inspector-section">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span class="inspector-badge" style="background:${srcColor};color:#0f172a;">${d.source.label}</span>
-          <span style="color:var(--text-muted);">&#8596;</span>
-          <span class="inspector-badge" style="background:${tgtColor};color:#0f172a;">${d.target.label}</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);">
-          Connected <strong>${d.weight}x</strong>${relationStr} — shared activity context or Nia memories
-        </div>
-      </div>`;
+      const relationStr = d.relation ? ` &middot; <span style="color:var(--accent);">${escapeHtml(d.relation.replace(/_/g, ' '))}</span>` : '';
+      let html = `<div class="inspector-detail-header">Connection Details</div>
+        <div class="inspector-entity-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="inspector-badge" style="background:${srcColor};color:#0f172a;">${escapeHtml(d.source.label)}</span>
+              <span style="color:var(--text-muted);font-size:14px;">&#8596;</span>
+              <span class="inspector-badge" style="background:${tgtColor};color:#0f172a;">${escapeHtml(d.target.label)}</span>
+            </div>
+          </div>
+          <div class="inspector-metrics-row" style="margin-top:12px;">
+            <span class="inspector-metric"><strong>${d.weight}</strong> connections</span>
+            ${relationStr ? '<span class="inspector-metric">' + relationStr + '</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Shared activity context or Nia memories</div>
+        </div>`;
 
       if (d.sharedActivity.length > 0) {
         html += `<div class="inspector-section">
@@ -2083,8 +2264,9 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
           const fontSize = Math.min(Math.max(10 + importance * 1.5, 10), 16);
           
           const isVerified = n.verified || false;
-          const bg = isVerified ? baseColor : baseColor + '99';
+          const bg = isVerified ? baseColor : baseColor + 'cc';
           const fontColor = isVerified ? '#f1f5f9' : '#94a3b8';
+          const haloColor = baseColor + '55';
           
           return {
             id: n.id,
@@ -2093,7 +2275,7 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             color: {
               background: bg,
               border: baseColor,
-              highlight: { background: '#fff', border: baseColor },
+              highlight: { background: baseColor, border: '#fff' },
               hover: { background: baseColor, border: '#fff' },
             },
             font: { 
@@ -2111,11 +2293,16 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             _contextDiversity: diversity,
             borderWidth: isVerified ? 3 : 1,
             borderDashes: isVerified ? false : [3, 3],
-            shadow: isVerified ? { enabled: true, size: 8, color: baseColor + '40' } : false,
+            shadow: { enabled: true, size: 16, color: haloColor, x: 0, y: 0 },
+            _baseColor: baseColor,
+            _haloShadow: { enabled: true, size: 16, color: haloColor, x: 0, y: 0 },
+            _originalColor: { background: bg, border: baseColor },
             hidden: false,
           };
         }));
 
+        const EDGE_GREY = 'rgba(148, 163, 184, 0.28)';
+        const EDGE_FOCUS = 'rgba(34, 197, 94, 0.6)';
         graphEdgesDS = new vis.DataSet(data.edges.map((e, i) => ({
           id: `e${i}`,
           from: e.source,
@@ -2126,15 +2313,33 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
           _targetLabel: e.targetLabel,
           _relation: e.relation || null,
           label: '',
-          color: { color: 'rgba(148, 163, 184, 0.25)', highlight: 'rgba(59, 130, 246, 0.6)', hover: 'rgba(148, 163, 184, 0.5)' },
-          smooth: { type: 'continuous' },
+          color: { color: EDGE_GREY, highlight: 'rgba(99, 102, 241, 0.7)', hover: 'rgba(148, 163, 184, 0.45)' },
+          width: 1,
+          smooth: { type: 'continuous', roundness: 0.5 },
           hoverWidth: 2,
+          _from: e.source,
+          _to: e.target,
           hidden: false,
         })));
 
         if (window._graphZoomInterval) { clearInterval(window._graphZoomInterval); window._graphZoomInterval = null; }
         if (graphNetwork) graphNetwork.destroy();
 
+        const floatingPhysics = {
+          enabled: true,
+          solver: 'forceAtlas2Based',
+          forceAtlas2Based: {
+            gravitationalConstant: -40,
+            centralGravity: 0.006,
+            springLength: 160,
+            springConstant: 0.03,
+            damping: 0.65,
+            avoidOverlap: 0.5,
+          },
+          stabilization: { enabled: false },
+          minVelocity: 0.3,
+          maxVelocity: 12,
+        };
         graphNetwork = new vis.Network(container, { nodes: graphNodesDS, edges: graphEdgesDS }, {
           physics: {
             enabled: true,
@@ -2202,11 +2407,11 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             }
           },
           edges: {
-            width: 1.5,
+            width: 1,
             color: {
-              color: 'rgba(113, 113, 122, 0.4)',
-              highlight: '#6366f1',
-              hover: 'rgba(99, 102, 241, 0.6)',
+              color: 'rgba(148, 163, 184, 0.28)',
+              highlight: 'rgba(99, 102, 241, 0.7)',
+              hover: 'rgba(148, 163, 184, 0.45)',
             },
             scaling: { min: 1, max: 4 },
             selectionWidth: 2,
@@ -2242,23 +2447,120 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
             el.textContent = Math.round(scale * 100) + '%';
           } catch {}
         }
+        let physicsDisabled = false;
         graphNetwork.once('stabilizationIterationsDone', () => {
           graphNetwork.setOptions({ physics: false });
-          graphNetwork.fit({ animation: { duration: 400 } });
+          physicsDisabled = true;
+          graphNetwork.fit({ animation: { duration: 500 } });
           updateZoomIndicator();
         });
         setTimeout(() => {
-          if (graphNetwork) {
+          if (graphNetwork && !physicsDisabled) {
             graphNetwork.setOptions({ physics: false });
-            graphNetwork.fit({ animation: { duration: 400 } });
+            physicsDisabled = true;
+            graphNetwork.fit({ animation: { duration: 500 } });
             updateZoomIndicator();
           }
         }, 2500);
+
+        // Floating feel when dragging: temporarily enable physics so connected nodes get pulled
+        graphNetwork.on('dragStart', () => {
+          if (physicsDisabled) {
+            graphNetwork.setOptions({ physics: floatingPhysics });
+            physicsDisabled = false;
+          }
+        });
+        graphNetwork.on('dragEnd', () => {
+          setTimeout(() => {
+            if (graphNetwork) {
+              graphNetwork.setOptions({ physics: false });
+              physicsDisabled = true;
+              updateZoomIndicator();
+            }
+          }, 500);
+        });
         graphNetwork.on('zoom', updateZoomIndicator);
         graphNetwork.on('animationFinished', updateZoomIndicator);
         window._graphZoomInterval = setInterval(updateZoomIndicator, 400);
 
         applyFilters();
+
+        // ── Focus dimming: dim non-connected nodes when a node/edge is selected ──
+        function getConnectedNodes(nodeIds) {
+          const set = new Set(nodeIds);
+          graphEdgesDS.forEach(edge => {
+            const from = edge._from || edge.from;
+            const to = edge._to || edge.to;
+            if (set.has(from) || set.has(to)) {
+              set.add(from);
+              set.add(to);
+            }
+          });
+          return set;
+        }
+        const DIM_COLOR = 'rgba(100, 116, 139, 0.45)';
+        const DIM_OPACITY = 0.12;
+        const FOCUS_EDGE_COLOR = 'rgba(34, 197, 94, 0.6)';
+        const FOCUS_EDGE_WIDTH = 2;
+        const TRANSITION_MS = 300;
+        const TRANSITION_STEPS = 12;
+        let focusDimTimeouts = [];
+
+        applyFocusDimmingFn = function(focusedNodeIds) {
+          if (!graphNodesDS || !graphEdgesDS) return;
+          focusDimTimeouts.forEach(clearTimeout);
+          focusDimTimeouts = [];
+          const focusSet = focusedNodeIds.length > 0 ? getConnectedNodes(focusedNodeIds) : null;
+          const stepMs = TRANSITION_MS / TRANSITION_STEPS;
+
+          const nodeStates = new Map();
+          graphNodesDS.forEach(node => {
+            const inFocus = !focusSet || focusSet.has(node.id);
+            const fromOpacity = node.opacity !== undefined ? node.opacity : 1;
+            nodeStates.set(node.id, { inFocus, node, fromOpacity });
+          });
+          const edgeStates = new Map();
+          graphEdgesDS.forEach(edge => {
+            const inFocus = !focusSet || (focusSet.has(edge._from || edge.from) && focusSet.has(edge._to || edge.to));
+            const fromWidth = edge.width !== undefined ? edge.width : 1;
+            edgeStates.set(edge.id, { inFocus, fromWidth });
+          });
+
+          for (let step = 1; step <= TRANSITION_STEPS; step++) {
+            const t = step / TRANSITION_STEPS;
+            const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            const id = setTimeout(() => {
+              nodeStates.forEach(({ inFocus, node, fromOpacity }, id) => {
+                const targetOpacity = inFocus ? 1 : DIM_OPACITY;
+                const opacity = fromOpacity + (targetOpacity - fromOpacity) * easeT;
+                const orig = node._originalColor;
+                const updates = { id };
+                if (inFocus) {
+                  updates.opacity = opacity;
+                  if (node._haloShadow) updates.shadow = node._haloShadow;
+                  if (orig) updates.color = { background: orig.background, border: orig.border, highlight: { background: node._baseColor, border: '#fff' }, hover: { background: node._baseColor, border: '#fff' } };
+                } else {
+                  updates.opacity = opacity;
+                  updates.shadow = false;
+                  updates.color = { background: DIM_COLOR, border: 'rgba(100, 116, 139, 0.5)', highlight: { background: DIM_COLOR, border: '#94a3b8' }, hover: { background: DIM_COLOR, border: '#94a3b8' } };
+                }
+                graphNodesDS.update(updates);
+              });
+              edgeStates.forEach(({ inFocus, fromWidth }, edgeId) => {
+                const targetWidth = inFocus ? FOCUS_EDGE_WIDTH : 1;
+                const width = fromWidth + (targetWidth - fromWidth) * easeT;
+                graphEdgesDS.update({
+                  id: edgeId,
+                  color: inFocus
+                    ? { color: FOCUS_EDGE_COLOR, highlight: 'rgba(99, 102, 241, 0.9)', hover: 'rgba(148, 163, 184, 0.5)' }
+                    : { color: EDGE_GREY, highlight: 'rgba(99, 102, 241, 0.4)', hover: 'rgba(148, 163, 184, 0.4)' },
+                  width,
+                });
+              });
+            }, stepMs * step);
+            focusDimTimeouts.push(id);
+          }
+        };
 
         // ── Hover tooltips ──
         let tooltipVisible = false;
@@ -2307,12 +2609,6 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
         });
 
         // ── Click: node detail or edge detail ──
-        graphNetwork.on('dragEnd', () => {
-          if (graphNetwork && graphNetwork.physics) {
-            try { graphNetwork.physics.physicsBody.simulation.restartSimulation?.(); } catch {}
-          }
-        });
-
         graphNetwork.on('click', (params) => {
           const isShift = params.event?.srcEvent?.shiftKey || false;
 
@@ -2323,19 +2619,25 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
               else selectedNodes.add(nodeId);
               updateSelectionUI();
               graphNetwork.unselectAll();
+              applyFocusDimmingFn?.(selectedNodes.size > 0 ? Array.from(selectedNodes) : []);
               return;
             }
             selectedNodes.clear();
             updateSelectionUI();
+            applyFocusDimmingFn?.([nodeId]);
             showNodeDetail(nodeId);
           } else if (params.edges.length > 0) {
             const edgeId = params.edges[0];
             const e = graphEdgesDS.get(edgeId);
-            if (e) showEdgeDetail(e.from, e.to);
+            if (e) {
+              applyFocusDimmingFn?.([e.from, e.to]);
+              showEdgeDetail(e.from, e.to);
+            }
           } else {
             if (!isShift) {
               selectedNodes.clear();
               updateSelectionUI();
+              applyFocusDimmingFn?.([]);
               document.getElementById('inspectorDetail').style.display = 'none';
               document.getElementById('inspectorAnalysis').style.display = 'none';
               document.getElementById('inspectorEmpty').style.display = 'block';
@@ -2382,10 +2684,10 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
         const weight = e.mentions || e.weight || 1;
         const importanceClass = weight >= 5 ? 'importance-high' : weight >= 2 ? 'importance-medium' : 'importance-low';
         return `
-          <label class="entity-filter-item ${isSelected ? 'selected' : ''}" data-id="${e.id}">
-            <input type="checkbox" ${isSelected ? 'checked' : ''} data-entity-id="${e.id}">
+          <label class="entity-filter-item ${isSelected ? 'selected' : ''}" data-id="${escapeHtml(e.id)}">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} data-entity-id="${escapeHtml(e.id)}">
             <span class="entity-dot" style="background:${typeColor}"></span>
-            <span class="${importanceClass}">${e.label}</span>
+            <span class="${importanceClass}">${escapeHtml(e.label)}</span>
             <span class="entity-weight">${weight}x</span>
           </label>
         `;
@@ -2495,6 +2797,7 @@ input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
       selectedNodes.clear();
       updateSelectionUI();
       if (graphNetwork) graphNetwork.unselectAll();
+      applyFocusDimmingFn?.([]);
     });
 
     // Graph actions

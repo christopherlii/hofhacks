@@ -118,9 +118,9 @@ export function isValidEntityName(name: string): boolean {
   // Skip common noise words
   const noise = ['loading', 'untitled', 'unknown', 'undefined', 'null', 'new tab', 'about:blank'];
   if (noise.includes(name.toLowerCase())) return false;
-  // Skip git branch names, PR titles, technical identifiers (snake_case with 3+ segments)
+  // Skip git branch names, PR titles, technical identifiers (snake_case with 2+ segments)
   const underscores = (name.match(/_/g) || []).length;
-  if (underscores >= 3 && name.length > 18 && /^[a-z0-9_-]+$/i.test(name)) return false;
+  if (underscores >= 2 && name.length > 15 && /^[a-z0-9_-]+$/i.test(name)) return false;
   return true;
 }
 
