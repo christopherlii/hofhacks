@@ -4,93 +4,83 @@
   <meta charset="UTF-8">
   <style>
     :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f5f5f7;
-      --bg-tertiary: #e8e8ed;
-      --text-primary: #1d1d1f;
-      --text-secondary: #6e6e73;
-      --text-muted: #86868b;
-      --accent: #007aff;
-      --accent-hover: #0056b3;
-      --accent-light: rgba(0, 122, 255, 0.1);
-      --green: #34c759;
-      --red: #ff3b30;
-      --border: rgba(0, 0, 0, 0.08);
-      --radius: 12px;
-    }
-    
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-primary: #1c1c1e;
-        --bg-secondary: #2c2c2e;
-        --bg-tertiary: #3a3a3c;
-        --text-primary: #f5f5f7;
-        --text-secondary: #a1a1a6;
-        --text-muted: #8e8e93;
-        --border: rgba(255, 255, 255, 0.1);
-      }
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-elevated: #1f1f23;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --green: #22c55e;
+      --green-muted: rgba(34, 197, 94, 0.15);
+      --red: #ef4444;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-strong: rgba(255, 255, 255, 0.1);
+      --radius: 8px;
     }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
-      padding: 40px;
+      padding: 32px;
       -webkit-font-smoothing: antialiased;
+      font-size: 14px;
+      line-height: 1.5;
     }
     
     h1 { 
-      font-size: 32px; 
-      font-weight: 700; 
-      margin-bottom: 8px; 
-      letter-spacing: -0.5px;
+      font-size: 24px; 
+      font-weight: 600; 
+      margin-bottom: 6px; 
+      letter-spacing: -0.3px;
     }
     
     .subtitle { 
-      color: var(--text-secondary); 
-      margin-bottom: 36px; 
-      font-size: 15px; 
-      line-height: 1.5; 
+      color: var(--text-muted); 
+      margin-bottom: 28px; 
+      font-size: 13px;
     }
     
     .privacy-notice {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 32px;
+      padding: 16px;
+      margin-bottom: 24px;
     }
     
     .privacy-notice h3 { 
-      color: var(--accent); 
-      font-size: 14px; 
+      color: var(--text-secondary); 
+      font-size: 11px; 
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     
     .privacy-notice ul { 
       list-style: none; 
-      padding: 0; 
     }
     
     .privacy-notice li { 
-      padding: 6px 0; 
-      font-size: 14px; 
+      padding: 4px 0; 
+      font-size: 13px; 
       color: var(--text-secondary);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
     
     .privacy-notice li::before {
       content: '';
       display: block;
-      width: 8px; 
-      height: 8px;
+      width: 6px; 
+      height: 6px;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -99,42 +89,42 @@
     .privacy-notice li.bad::before { background: var(--red); }
     
     .form-group { 
-      margin-bottom: 28px; 
+      margin-bottom: 20px; 
     }
     
     label {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     
     input[type="password"], input[type="text"] {
       width: 100%;
-      padding: 14px 18px;
-      background: var(--bg-secondary);
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
       color: var(--text-primary);
-      font-size: 15px;
-      font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+      font-size: 13px;
+      font-family: 'SF Mono', ui-monospace, monospace;
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
     
     input:focus { 
-      border-color: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-light);
+      border-color: rgba(99, 102, 241, 0.5);
+      background: var(--bg-elevated);
     }
     
     .input-hint {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
-      margin-top: 8px;
-      line-height: 1.5;
+      margin-top: 6px;
+      line-height: 1.4;
     }
     
     .input-hint a {
@@ -151,22 +141,22 @@
       align-items: center;
       justify-content: space-between;
       background: var(--bg-secondary);
-      padding: 18px 20px;
-      border-radius: 10px;
+      padding: 12px 14px;
+      border-radius: 6px;
       border: 1px solid var(--border);
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     
     .toggle-label { 
-      font-size: 16px; 
+      font-size: 14px; 
       font-weight: 500;
       color: var(--text-primary); 
     }
     
     .toggle { 
       position: relative; 
-      width: 51px; 
-      height: 31px; 
+      width: 44px; 
+      height: 24px; 
       cursor: pointer; 
     }
     
@@ -176,62 +166,59 @@
       position: absolute; 
       inset: 0;
       background: var(--bg-tertiary); 
-      border-radius: 16px; 
+      border-radius: 12px; 
       transition: all 0.2s ease;
+      border: 1px solid var(--border);
     }
     
     .toggle-slider::before {
       content: ''; 
       position: absolute;
-      width: 27px; 
-      height: 27px; 
-      background: white; 
+      width: 18px; 
+      height: 18px; 
+      background: var(--text-muted);
       border-radius: 50%;
       top: 2px; 
       left: 2px; 
-      transition: transform 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
     }
     
     .toggle input:checked + .toggle-slider { 
       background: var(--green); 
+      border-color: var(--green);
     }
     
     .toggle input:checked + .toggle-slider::before { 
-      transform: translateX(20px); 
+      transform: translateX(20px);
+      background: white;
     }
     
     .btn {
       width: 100%;
-      padding: 16px;
+      padding: 12px;
       background: var(--accent);
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 16px;
+      border-radius: 6px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: 12px;
+      transition: all 0.15s ease;
+      margin-top: 8px;
     }
     
     .btn:hover { 
       background: var(--accent-hover);
-      transform: scale(1.01);
-    }
-    
-    .btn:active { 
-      transform: scale(0.99);
     }
     
     .status-msg {
       text-align: center; 
-      margin-top: 16px;
-      font-size: 14px; 
+      margin-top: 12px;
+      font-size: 13px; 
       font-weight: 500;
       color: var(--green); 
       opacity: 0; 
-      transition: opacity 0.3s;
+      transition: opacity 0.2s;
     }
     
     .status-msg.visible { opacity: 1; }
@@ -239,16 +226,16 @@
 </head>
 <body>
   <h1>Settings</h1>
-  <p class="subtitle">Configure your personal memory assistant.</p>
+  <p class="subtitle">Configure your personal context engine.</p>
 
   <div class="privacy-notice">
-    <h3>Privacy & Data</h3>
+    <h3>Privacy</h3>
     <ul>
-      <li class="good">OCR runs 100% locally using Tesseract.js</li>
-      <li class="good">Sensitive data (cards, SSNs, passwords) is scrubbed before API calls</li>
-      <li class="good">Screenshots are never saved to disk</li>
-      <li class="bad">Scrubbed text sent to AI for context understanding</li>
-      <li class="bad">Activity summaries stored in Nia cloud for search</li>
+      <li class="good">OCR runs locally using Tesseract.js</li>
+      <li class="good">Sensitive data scrubbed before API calls</li>
+      <li class="good">Screenshots never saved to disk</li>
+      <li class="bad">Screen text sent to AI for understanding</li>
+      <li class="bad">Activity stored in Nia cloud</li>
     </ul>
   </div>
 
@@ -264,10 +251,10 @@
 
   <div class="form-group">
     <label>Vision API Key</label>
-    <input type="password" id="geminiKey" placeholder="sk-... (OpenAI) or AIza... (Gemini)" autocomplete="off" spellcheck="false">
+    <input type="password" id="geminiKey" placeholder="sk-... or AIza..." autocomplete="off" spellcheck="false">
     <p class="input-hint">
-      OpenAI (sk-...) uses GPT-4o-mini • Gemini (AIza...) uses Flash 2.0<br>
-      <a href="https://platform.openai.com/api-keys" target="_blank">Get OpenAI key</a>
+      OpenAI (sk-...) → GPT-4o-mini • Gemini (AIza...) → Flash 2.0
+      <br><a href="https://platform.openai.com/api-keys" target="_blank">Get OpenAI key</a>
     </p>
   </div>
 
@@ -284,7 +271,7 @@
       <span class="toggle-label">Vision Extraction</span>
       <label class="toggle"><input type="checkbox" id="useVisionExtraction"><span class="toggle-slider"></span></label>
     </div>
-    <p class="input-hint">Vision uses AI to understand screen context — more accurate than OCR, ignores sidebars and notifications.</p>
+    <p class="input-hint">Vision uses AI to understand screen context with spatial awareness.</p>
   </div>
 
   <button class="btn" id="saveBtn">Save Settings</button>
