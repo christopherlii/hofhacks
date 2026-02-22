@@ -6,6 +6,7 @@ import { claudeTextRequest } from '../../shared/claude-http';
 import { logElephantEvent } from './logger';
 import { generateSuggestions, type Suggestion, type SuggestionAction, type Actor, type ActorResult } from './suggestions';
 import type { NowContext } from '../../types';
+import { OpenClawClient } from '../../openclaw-client';
 
 const ACTION_TYPES = new Set(['open_url', 'set_reminder', 'send_reply', 'compose_message', 'fill_form']);
 
@@ -84,35 +85,62 @@ async function textActor(action: SuggestionAction, context: NowContext): Promise
   return { ok: true, type: 'text', message: 'Response generated.', text };
 }
 
-function askOpenClaw(prompt: string): Promise<string> {
-  const { execFile } = require('child_process') as typeof import('child_process');
-  return new Promise((resolve, reject) => {
-    execFile('openclaw', ['agent', '--message', prompt, '--json', '--timeout', '120'], {
-      encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024,
-    }, (err, stdout) => {
-      if (err) return reject(err);
-      try {
-        const parsed = JSON.parse(stdout);
-        resolve(parsed.response || parsed.content || stdout);
-      } catch {
-        resolve(stdout);
-      }
-    });
-  });
+// OpenClaw client for browser-controlled actions
+const openClawClient = new OpenClawClient({
+  host: '127.0.0.1',
+  port: 18789,
+  token: '',
+});
+
+function setOpenClawToken(token: string): void {
+  openClawClient.setToken(token);
+}
+
+function buildActionPrompt(action: SuggestionAction, context: NowContext): string {
+  const actionDetails = Object.entries(action.payload)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(', ');
+
+  // For email/message actions, instruct to use browser control
+  if (action.type === 'send_reply' || action.type === 'compose_message') {
+    return `You have browser control via the Browser Relay extension.
+
+ACTION: ${action.type}
+${actionDetails}
+
+INSTRUCTIONS:
+1. Use browser snapshot to read the full email/message thread currently visible
+2. Understand the context and what response is appropriate
+3. Draft a professional, contextual reply based on what you read
+4. Type the reply into the compose field
+5. Send it
+
+Current app: ${context.activeApp || 'Unknown'}
+Window: ${context.windowTitle || 'Unknown'}
+${context.url ? `URL: ${context.url}` : ''}
+
+Execute this now using browser control. Read the actual content on screen, draft an appropriate reply, and send it.`;
+  }
+
+  // For other actions, simpler prompt
+  return `Execute this action using your available tools:
+
+Action: ${action.type}
+${actionDetails}
+
+Context:
+- App: ${context.activeApp || 'Unknown'}
+- Window: ${context.windowTitle || 'Unknown'}
+${context.url ? `- URL: ${context.url}` : ''}
+
+Execute this now.`;
 }
 
 async function actionActor(action: SuggestionAction, context: NowContext): Promise<ActorResult> {
-  const prompt = [
-    `Action: ${action.type}`,
-    ...Object.entries(action.payload).map(([k, v]) => `${k}: ${v}`),
-    `App: ${context.activeApp || ''}`,
-    `Window: ${context.windowTitle || ''}`,
-    context.url ? `URL: ${context.url}` : '',
-  ].filter(Boolean).join('\n');
+  const prompt = buildActionPrompt(action, context);
 
   try {
-    const response = await askOpenClaw(prompt);
+    const response = await openClawClient.ask(prompt);
     return { ok: true, type: 'action', message: response };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
@@ -466,4 +494,4 @@ function setupIPC(): void {
   });
 }
 
-export { init, toggleElephant, dismissElephant, setupIPC, writeToNia, extractEntities };
+export { init, toggleElephant, dismissElephant, setupIPC, writeToNia, extractEntities, setOpenClawToken };

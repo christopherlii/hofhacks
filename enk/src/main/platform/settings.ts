@@ -2,6 +2,7 @@ import type { Settings } from '../../types';
 
 interface SaveSettingsDeps {
   setNiaApiKey: (key: string) => void;
+  setOpenClawToken: (token: string) => void;
   startMonitoring: () => void;
   stopMonitoring: () => void;
   refreshElephantShortcut: () => void;
@@ -24,6 +25,7 @@ function getSettingsPayload(store: any): Settings {
     anthropicKey,
     niaKey: store.get('niaKey') as string,
     geminiKey: store.get('geminiKey') as string | undefined,
+    openClawToken: store.get('openClawToken') as string | undefined,
     enabled,
     scamDetection: store.get('scamDetection') as boolean,
     useVisionExtraction: store.get('useVisionExtraction') as boolean | undefined,
@@ -41,6 +43,7 @@ function saveSettingsPayload(store: any, settings: Partial<Settings>, deps: Save
   if (anthropicKey !== undefined) store.set('anthropicKey', anthropicKey);
   if (settings.niaKey !== undefined) store.set('niaKey', settings.niaKey);
   if (settings.geminiKey !== undefined) store.set('geminiKey', settings.geminiKey);
+  if (settings.openClawToken !== undefined) store.set('openClawToken', settings.openClawToken);
   if (monitoringEnabled !== undefined) store.set('enabled', monitoringEnabled);
   if (settings.scamDetection !== undefined) store.set('scamDetection', settings.scamDetection);
   if (settings.useVisionExtraction !== undefined) store.set('useVisionExtraction', settings.useVisionExtraction);
@@ -48,6 +51,7 @@ function saveSettingsPayload(store: any, settings: Partial<Settings>, deps: Save
   if (settings.firstLaunch !== undefined) store.set('firstLaunch', settings.firstLaunch);
 
   if (settings.niaKey) deps.setNiaApiKey(settings.niaKey);
+  if (settings.openClawToken) deps.setOpenClawToken(settings.openClawToken);
 
   if (monitoringEnabled === false) deps.stopMonitoring();
   else if (monitoringEnabled === true) deps.startMonitoring();

@@ -236,6 +236,7 @@ function getSettingsPayload(): Settings {
 function saveSettingsPayload(settings: Partial<Settings>): boolean {
   return persistSettingsPayload(store, settings, {
     setNiaApiKey: (key: string) => nia.setApiKey(key),
+    setOpenClawToken: (token: string) => elephant.setOpenClawToken(token),
     startMonitoring: monitoringControl.startMonitoring,
     stopMonitoring: monitoringControl.stopMonitoring,
     refreshElephantShortcut: updateElephantShortcut,
@@ -318,6 +319,12 @@ function startBootstrap(): void {
   app.whenReady().then(async () => {
     await initStore();
     assistantApi.initPatternDetector();
+
+    // Initialize OpenClaw token from settings
+    const openClawToken = store?.get('openClawToken') as string | undefined;
+    if (openClawToken) {
+      elephant.setOpenClawToken(openClawToken);
+    }
 
     elephant.init({
       apiKey: () => getStoreApiKey(store),

@@ -109,6 +109,7 @@ export interface Settings {
   anthropicKey: string;
   niaKey: string;
   geminiKey?: string;              // Gemini API key for vision extraction
+  openClawToken?: string;          // OpenClaw gateway auth token for browser control
   enabled: boolean;
   scamDetection: boolean;
   useVisionExtraction?: boolean;   // Use Gemini 2.0 Flash for screen context
