@@ -6,76 +6,68 @@
   <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
   <style>
 /* 
- * Enk UI - Apple-inspired Design System
- * Clean, minimal, lots of whitespace, subtle depth
+ * Enk UI - Ramp-inspired Design System
+ * Dark, minimal, professional, smooth
  */
 
 :root {
-  /* Light mode (default) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f7;
-  --bg-tertiary: #e8e8ed;
-  --bg-elevated: rgba(255, 255, 255, 0.72);
-  --bg-glass: rgba(255, 255, 255, 0.65);
+  /* Dark theme (Ramp-style) */
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #111113;
+  --bg-tertiary: #18181b;
+  --bg-elevated: #1f1f23;
+  --bg-hover: #27272a;
   
-  --text-primary: #1d1d1f;
-  --text-secondary: #6e6e73;
-  --text-muted: #86868b;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-dim: #52525b;
   
-  --accent: #007aff;
-  --accent-hover: #0056b3;
-  --accent-light: rgba(0, 122, 255, 0.1);
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-muted: rgba(99, 102, 241, 0.15);
   
-  --green: #34c759;
-  --red: #ff3b30;
-  --orange: #ff9500;
-  --yellow: #ffcc00;
-  --purple: #af52de;
-  --pink: #ff2d55;
-  --teal: #5ac8fa;
+  --green: #22c55e;
+  --green-muted: rgba(34, 197, 94, 0.15);
+  --red: #ef4444;
+  --red-muted: rgba(239, 68, 68, 0.15);
+  --orange: #f97316;
+  --yellow: #eab308;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --pink: #ec4899;
+  --cyan: #06b6d4;
   
-  --border: rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(99, 102, 241, 0.5);
   
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   
-  --sidebar-width: 220px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   
-  --blur: blur(20px);
-  --transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --sidebar-width: 200px;
+  --header-height: 52px;
+  
+  --transition-fast: 0.2s ease;
+  --transition: 0.35s ease;
+  --transition-slow: 0.5s ease;
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #1c1c1e;
-    --bg-secondary: #2c2c2e;
-    --bg-tertiary: #3a3a3c;
-    --bg-elevated: rgba(44, 44, 46, 0.72);
-    --bg-glass: rgba(28, 28, 30, 0.65);
-    
-    --text-primary: #f5f5f7;
-    --text-secondary: #a1a1a6;
-    --text-muted: #8e8e93;
-    
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.15);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
-  }
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Text', system-ui, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   height: 100vh;
@@ -83,7 +75,8 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-app-region: no-drag;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* ─── Sidebar ─── */
@@ -102,14 +95,14 @@ body {
 }
 
 .sidebar-header h1 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
   color: var(--text-primary);
 }
 
 .sidebar-header .subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 4px;
   font-weight: 400;
@@ -117,56 +110,57 @@ body {
 
 .nav {
   flex: 1;
-  padding: 0 12px;
+  padding: 8px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
-  transition: var(--transition);
+  transition: var(--transition-fast);
   user-select: none;
   margin-bottom: 2px;
 }
 
 .nav-item:hover { 
-  background: var(--bg-tertiary); 
+  background: var(--bg-hover); 
   color: var(--text-primary); 
 }
 
 .nav-item.active { 
-  background: var(--accent-light); 
+  background: var(--accent-muted); 
   color: var(--accent);
 }
 
 .nav-item svg { 
-  width: 18px; 
-  height: 18px; 
+  width: 16px; 
+  height: 16px; 
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: 0.7;
 }
 
-.nav-item.active svg {
+.nav-item.active svg,
+.nav-item:hover svg {
   opacity: 1;
 }
 
 .sidebar-stats {
-  padding: 16px 20px;
+  padding: 12px 16px;
   border-top: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .stat-row { 
   display: flex; 
   justify-content: space-between; 
-  padding: 4px 0; 
+  padding: 3px 0; 
 }
 
 .stat-val { 
@@ -177,18 +171,16 @@ body {
 
 .status-dot {
   display: inline-block;
-  width: 8px; 
-  height: 8px;
+  width: 6px; 
+  height: 6px;
   border-radius: 50%;
   background: var(--green);
   margin-right: 6px;
   vertical-align: middle;
-  box-shadow: 0 0 8px var(--green);
 }
 
 .status-dot.inactive { 
   background: var(--text-muted); 
-  box-shadow: none;
 }
 
 /* ─── Main content ─── */
@@ -209,14 +201,28 @@ body {
 
 .view.active { display: flex; }
 
+/* ─── Page Headers ─── */
+.page-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
+  -webkit-app-region: drag;
+}
+
+.page-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
 /* ─── Chat view ─── */
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .messages::-webkit-scrollbar { width: 6px; }
@@ -225,52 +231,51 @@ body {
   background: var(--bg-tertiary); 
   border-radius: 3px; 
 }
+.messages::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-hover);
+}
 
 .message {
-  max-width: 70%;
-  padding: 14px 18px;
-  border-radius: var(--radius-xl);
-  font-size: 15px;
-  line-height: 1.5;
+  max-width: 72%;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  line-height: 1.55;
   word-wrap: break-word;
   white-space: pre-wrap;
+  transition: var(--transition-fast);
 }
 
 .message.user {
   align-self: flex-end;
   background: var(--accent);
   color: white;
-  border-bottom-right-radius: 6px;
+  border-bottom-right-radius: var(--radius-xs);
 }
 
 .message.assistant {
   align-self: flex-start;
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: var(--radius-xs);
 }
 
 .message.error {
   align-self: flex-start;
-  background: rgba(255, 59, 48, 0.1);
-  border: 1px solid rgba(255, 59, 48, 0.2);
+  background: var(--red-muted);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   color: var(--red);
 }
 
-.message .msg-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-
 .message .timestamp {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
+  margin-top: 6px;
+  display: block;
 }
 
 .message.user .timestamp { 
-  color: rgba(255, 255, 255, 0.7); 
+  color: rgba(255, 255, 255, 0.6); 
 }
 
 .copy-btn {
@@ -278,71 +283,69 @@ body {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 10px;
+  border-radius: var(--radius-xs);
   opacity: 0;
-  transition: var(--transition);
+  transition: var(--transition-fast);
 }
 
 .message:hover .copy-btn { opacity: 1; }
 .copy-btn:hover { 
-  background: var(--bg-tertiary); 
+  background: var(--bg-hover); 
   color: var(--text-primary); 
 }
-.copy-btn.copied { 
-  opacity: 1; 
-  color: var(--green); 
-}
 
+/* Typing indicator */
 .typing-indicator {
   align-self: flex-start;
-  padding: 14px 18px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  border-bottom-left-radius: 6px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-xs);
   display: none;
 }
 
 .typing-indicator.visible { 
   display: flex; 
-  gap: 5px; 
+  gap: 4px; 
   align-items: center; 
 }
 
 .typing-dot {
-  width: 8px; 
-  height: 8px;
+  width: 6px; 
+  height: 6px;
   background: var(--text-muted);
   border-radius: 50%;
-  animation: typingBounce 1.4s infinite;
+  animation: typingPulse 1.4s infinite;
 }
 
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
 
-@keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-8px); }
+@keyframes typingPulse {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.9); }
+  30% { opacity: 1; transform: scale(1); }
 }
 
+/* Welcome message */
 .welcome-msg {
   text-align: center;
-  padding: 80px 48px;
-  max-width: 480px;
+  padding: 60px 40px;
+  max-width: 440px;
   margin: 0 auto;
 }
 
 .welcome-msg h2 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
 }
 
 .welcome-msg p { 
-  font-size: 16px; 
+  font-size: 14px; 
   line-height: 1.6; 
   color: var(--text-secondary);
 }
@@ -350,17 +353,17 @@ body {
 .suggestions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 .suggestion {
-  padding: 10px 18px;
-  background: var(--bg-secondary);
+  padding: 8px 14px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: 100px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition);
@@ -368,42 +371,43 @@ body {
 }
 
 .suggestion:hover { 
-  background: var(--accent-light); 
-  color: var(--accent); 
-  border-color: var(--accent); 
+  background: var(--bg-hover); 
+  color: var(--text-primary); 
+  border-color: var(--border-strong);
 }
 
+/* Chat input */
 .chat-input-area {
-  padding: 20px 32px 28px;
+  padding: 16px 24px 20px;
   background: var(--bg-primary);
   border-top: 1px solid var(--border);
 }
 
 .input-wrapper {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-end;
 }
 
 .chat-input {
   flex: 1;
-  padding: 14px 18px;
-  background: var(--bg-secondary);
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: 14px;
   font-family: inherit;
   resize: none;
   outline: none;
-  max-height: 140px;
+  max-height: 120px;
   line-height: 1.5;
   transition: var(--transition);
 }
 
 .chat-input:focus { 
-  border-color: var(--accent); 
-  box-shadow: 0 0 0 3px var(--accent-light);
+  border-color: var(--border-focus);
+  background: var(--bg-elevated);
 }
 
 .chat-input::placeholder { 
@@ -411,8 +415,8 @@ body {
 }
 
 .send-btn {
-  width: 46px; 
-  height: 46px;
+  width: 40px; 
+  height: 40px;
   background: var(--accent);
   border: none;
   border-radius: var(--radius-md);
@@ -426,48 +430,47 @@ body {
 }
 
 .send-btn:hover { 
-  background: var(--accent-hover); 
-  transform: scale(1.02);
+  background: var(--accent-hover);
 }
 
 .send-btn:disabled { 
   background: var(--bg-tertiary); 
   cursor: not-allowed;
-  transform: none;
+  opacity: 0.5;
 }
 
 .send-btn svg { 
-  width: 20px; 
-  height: 20px; 
+  width: 18px; 
+  height: 18px; 
 }
 
-/* ─── Generic section styles ─── */
+/* ─── Sections & Content ─── */
 .activity-view,
 .memory-view,
 .settings-view { 
-  padding: 32px; 
+  padding: 24px; 
   overflow-y: auto; 
 }
 
-.activity-view h2,
-.memory-view h2,
-.settings-view h2 { 
-  font-size: 24px; 
+.section-header {
+  font-size: 11px;
   font-weight: 600;
-  margin-bottom: 24px;
-  letter-spacing: -0.5px;
-}
-
-.activity-section { 
-  margin-bottom: 36px; 
-}
-
-.activity-section h3 {
-  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.activity-section { 
+  margin-bottom: 32px; 
+}
+
+.activity-section h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
   font-weight: 600;
 }
 
@@ -475,18 +478,18 @@ body {
 .app-bar-container { 
   display: flex; 
   flex-direction: column; 
-  gap: 10px; 
+  gap: 8px; 
 }
 
 .app-bar-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .app-bar-label {
-  width: 140px;
-  font-size: 14px;
+  width: 120px;
+  font-size: 13px;
   color: var(--text-secondary);
   text-align: right;
   overflow: hidden;
@@ -498,47 +501,48 @@ body {
 
 .app-bar-track {
   flex: 1;
-  height: 28px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-sm);
+  height: 24px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 
 .app-bar-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: var(--radius-sm);
-  transition: width 0.5s ease;
+  border-radius: var(--radius-xs);
+  transition: width 0.4s ease;
   display: flex;
   align-items: center;
-  padding-left: 12px;
-  font-size: 12px;
+  padding-left: 10px;
+  font-size: 11px;
   color: white;
   font-weight: 600;
-  min-width: 48px;
+  min-width: 40px;
 }
 
 /* ─── Timeline ─── */
 .timeline-item {
   display: flex;
-  gap: 16px;
-  padding: 12px 0;
-  font-size: 14px;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 13px;
   border-bottom: 1px solid var(--border);
 }
 
 .timeline-time { 
   color: var(--text-muted); 
   flex-shrink: 0; 
-  width: 56px;
+  width: 48px;
   font-variant-numeric: tabular-nums;
+  font-size: 12px;
 }
 
 .timeline-app { 
   color: var(--accent); 
   font-weight: 600; 
   flex-shrink: 0; 
-  width: 120px; 
+  width: 100px; 
   overflow: hidden; 
   text-overflow: ellipsis; 
   white-space: nowrap; 
@@ -551,68 +555,79 @@ body {
   white-space: nowrap; 
 }
 
-/* ─── Action buttons ─── */
+/* ─── Buttons ─── */
 .action-btn {
-  padding: 10px 20px;
-  background: var(--bg-secondary);
+  padding: 8px 14px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
+  font-family: inherit;
 }
 
 .action-btn:hover { 
-  background: var(--accent-light); 
-  color: var(--accent);
-  border-color: var(--accent);
+  background: var(--bg-hover); 
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
 .action-btns { 
   display: flex; 
-  gap: 10px; 
+  gap: 8px; 
   flex-wrap: wrap; 
 }
 
-/* ─── Memory cards ─── */
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* ─── Cards ─── */
 .md-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 8px;
   cursor: pointer;
   transition: var(--transition);
 }
 
 .md-card:hover { 
-  border-color: var(--accent);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  background: var(--bg-tertiary);
 }
 
 .md-card h4 { 
-  font-size: 16px; 
+  font-size: 14px; 
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .md-card p { 
-  font-size: 14px; 
-  color: var(--text-secondary); 
-  line-height: 1.5; 
+  font-size: 13px; 
+  color: var(--text-muted); 
+  line-height: 1.4; 
 }
 
-/* ─── Settings ─── */
+/* ─── Forms ─── */
 .form-group { 
-  margin-bottom: 24px; 
+  margin-bottom: 20px; 
 }
 
 .form-group label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -623,20 +638,20 @@ body {
 .form-group input[type="password"],
 .form-group input[type="text"] {
   width: 100%;
-  padding: 12px 16px;
-  background: var(--bg-secondary);
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
   outline: none;
   transition: var(--transition);
 }
 
 .form-group input:focus { 
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-light);
+  border-color: var(--border-focus);
+  background: var(--bg-elevated);
 }
 
 .toggle-row {
@@ -644,22 +659,22 @@ body {
   align-items: center;
   justify-content: space-between;
   background: var(--bg-secondary);
-  padding: 16px 20px;
-  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .toggle-row span { 
-  font-size: 15px; 
+  font-size: 14px; 
   color: var(--text-primary);
   font-weight: 500;
 }
 
 .toggle {
   position: relative;
-  width: 51px; 
-  height: 31px;
+  width: 44px; 
+  height: 24px;
   cursor: pointer;
 }
 
@@ -669,38 +684,40 @@ body {
   position: absolute;
   inset: 0;
   background: var(--bg-tertiary);
-  border-radius: 16px;
+  border-radius: 12px;
   transition: var(--transition);
+  border: 1px solid var(--border);
 }
 
 .toggle-slider::before {
   content: '';
   position: absolute;
-  width: 27px; 
-  height: 27px;
-  background: white;
+  width: 18px; 
+  height: 18px;
+  background: var(--text-secondary);
   border-radius: 50%;
   top: 2px; 
   left: 2px;
   transition: var(--transition);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle input:checked + .toggle-slider { 
   background: var(--green); 
+  border-color: var(--green);
 }
 
 .toggle input:checked + .toggle-slider::before { 
-  transform: translateX(20px); 
+  transform: translateX(20px);
+  background: white;
 }
 
 .settings-save {
-  padding: 12px 28px;
+  padding: 10px 20px;
   background: var(--accent);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: white;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
@@ -708,13 +725,12 @@ body {
 
 .settings-save:hover { 
   background: var(--accent-hover);
-  transform: scale(1.02);
 }
 
 .save-status {
   display: inline-block;
-  margin-left: 16px;
-  font-size: 14px;
+  margin-left: 12px;
+  font-size: 13px;
   color: var(--green);
   opacity: 0;
   transition: var(--transition);
@@ -726,34 +742,34 @@ body {
 /* ─── Search ─── */
 .search-bar {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .search-input {
   flex: 1;
-  padding: 12px 16px;
-  background: var(--bg-secondary);
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   transition: var(--transition);
 }
 
 .search-input:focus { 
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-light);
+  border-color: var(--border-focus);
+  background: var(--bg-elevated);
 }
 
 .search-btn {
-  padding: 12px 20px;
+  padding: 10px 16px;
   background: var(--accent);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
@@ -763,39 +779,93 @@ body {
   background: var(--accent-hover);
 }
 
-/* ─── Graph chips ─── */
+/* ─── Graph Filters (Professional Top Bar) ─── */
+.graph-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 8px;
+}
+
 .graph-chip {
   font-size: 12px; 
-  padding: 5px 12px; 
-  border-radius: 100px; 
+  padding: 4px 10px; 
+  border-radius: var(--radius-sm); 
   cursor: pointer;
-  border: 1px solid var(--chip-color, var(--border));
+  border: 1px solid var(--border);
   background: transparent; 
-  color: var(--chip-color, var(--text-muted));
-  transition: var(--transition); 
+  color: var(--text-muted);
+  transition: var(--transition-fast); 
   font-family: inherit;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-chip .chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--chip-color, var(--text-muted));
 }
 
 .graph-chip.active {
-  background: var(--chip-color, var(--border));
-  color: white; 
-  font-weight: 600;
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.graph-chip.active .chip-dot {
+  box-shadow: 0 0 6px var(--chip-color);
 }
 
 .graph-chip:hover { 
-  opacity: 0.85; 
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.graph-chip-expand {
+  font-size: 8px;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.graph-chip-wrapper.expanded .graph-chip-expand {
+  transform: rotate(-180deg);
 }
 
 .graph-time-btn {
   font-size: 11px; 
-  padding: 4px 10px; 
-  border-radius: 6px; 
+  padding: 4px 8px; 
+  border-radius: var(--radius-xs); 
   cursor: pointer;
   border: 1px solid var(--border); 
   background: transparent; 
   color: var(--text-muted);
-  transition: var(--transition); 
+  transition: var(--transition-fast); 
   font-family: inherit;
   font-weight: 500;
 }
@@ -803,21 +873,148 @@ body {
 .graph-time-btn.active {
   background: var(--accent); 
   border-color: var(--accent); 
-  color: #fff; 
-  font-weight: 600;
+  color: white;
 }
 
 .graph-time-btn:hover:not(.active) { 
-  border-color: var(--text-muted); 
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
 }
 
-/* ─── Inspector ─── */
-.inspector-section { 
-  margin-bottom: 16px; 
+/* ─── Graph Canvas ─── */
+#graphCanvas,
+#graphCanvas:focus,
+#graphCanvas:focus-within,
+#graphContainer,
+#graphContainer:focus,
+#graphContainer canvas,
+#graphContainer canvas:focus,
+#graphContainer .vis-network,
+#graphContainer .vis-network:focus,
+#graphContainer .vis-active {
+  outline: none !important;
+  outline-width: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
+
+.graph-canvas-container {
+  flex: 1;
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  margin: 12px;
+  overflow: hidden;
+}
+
+.graph-canvas-inner {
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at center, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+}
+
+.graph-zoom-indicator {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-tooltip {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+  z-index: 100;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  max-width: 280px;
+}
+
+/* ─── Graph Inspector Panel ─── */
+.graph-inspector {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.inspector-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.inspector-section { 
+  margin-bottom: 18px; 
+}
+
+.inspector-detail-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.inspector-entity-card {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+
+.inspector-entity-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.inspector-metrics-row {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.inspector-metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inspector-metric strong { color: var(--text-primary); }
 
 .inspector-section-title {
-  font-size: 11px; 
+  font-size: 10px; 
   text-transform: uppercase; 
   letter-spacing: 0.5px;
   color: var(--text-muted); 
@@ -827,20 +1024,24 @@ body {
 
 .inspector-badge {
   display: inline-block; 
-  font-size: 11px; 
-  padding: 2px 8px; 
-  border-radius: 6px;
+  font-size: 10px; 
+  padding: 3px 8px; 
+  border-radius: var(--radius-xs);
   font-weight: 600; 
-  vertical-align: middle; 
-  margin-left: 6px;
 }
 
 .inspector-activity-item {
   font-size: 12px; 
   color: var(--text-secondary); 
-  padding: 6px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   border-bottom: 1px solid var(--border); 
   line-height: 1.5;
+  transition: var(--transition);
+}
+
+.inspector-activity-item:hover {
+  background: var(--bg-hover);
 }
 
 .inspector-activity-item:last-child { 
@@ -852,47 +1053,103 @@ body {
   align-items: center; 
   gap: 6px; 
   font-size: 12px;
-  padding: 4px 10px; 
+  padding: 8px 12px; 
   border-radius: var(--radius-sm); 
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   border: 1px solid var(--border); 
-  margin: 3px 3px 3px 0; 
+  margin: 4px 6px 4px 0; 
   cursor: pointer;
   transition: var(--transition);
   font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .inspector-connection:hover { 
   border-color: var(--accent); 
+  background: var(--accent-muted);
+  color: var(--text-primary);
 }
 
 .inspector-connection .conn-dot {
   width: 8px; 
   height: 8px; 
-  border-radius: 50%; 
+  border-radius: 4px; 
   flex-shrink: 0;
 }
 
-/* ─── Glass effects ─── */
-.glass {
-  background: var(--bg-glass);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+.inspector-action-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: var(--transition);
+  font-family: inherit;
 }
 
-/* ─── Entity filters ─── */
-.entity-filter-panel {
-  max-height: 200px;
-  overflow-y: auto;
-  margin-top: 10px;
-  padding: 12px;
-  background: var(--bg-secondary);
+.inspector-action-btn:hover {
+  background: var(--accent-hover);
+}
+
+.inspector-action-btn.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  display: none;
 }
 
-.entity-filter-panel.visible { display: block; }
+.inspector-action-btn.secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ─── Entity Filter Panel ─── */
+.entity-filter-panel {
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding: 0 10px;
+  background: var(--bg-primary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
+}
+
+.entity-filter-panel.visible {
+  max-height: 220px;
+  margin-top: 8px;
+  padding: 10px;
+  opacity: 1;
+  overflow-y: auto;
+  border-color: var(--border);
+}
+
+.entity-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.entity-filter-item:hover { 
+  background: var(--bg-hover); 
+}
+
+.entity-filter-item.selected { 
+  background: var(--accent-muted); 
+  color: var(--text-primary);
+}
 
 .entity-filter-header {
   display: flex;
@@ -904,43 +1161,84 @@ body {
 }
 
 .entity-filter-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-}
-
-.entity-filter-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: var(--transition);
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.entity-filter-item:hover { 
-  background: var(--bg-tertiary); 
-}
-
-.entity-filter-item.selected { 
-  background: var(--accent-light); 
   color: var(--text-primary);
 }
 
+.entity-filter-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.entity-filter-btn {
+  font-size: 10px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.entity-filter-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.entity-filter-item .entity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.entity-filter-item .entity-weight {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.entity-filter-item .importance-high { font-weight: 600; color: var(--text-primary); }
+.entity-filter-item .importance-medium { font-weight: 500; color: var(--text-secondary); }
+.entity-filter-item .importance-low { font-weight: 400; color: var(--text-muted); }
+
+.entity-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* ─── Scrollbars ─── */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { 
   background: var(--bg-tertiary); 
-  border-radius: 4px;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--bg-hover);
+}
+
+/* ─── Smooth transitions globally ─── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Exclude certain properties from global transition */
+.messages *, .graph-canvas-inner *, input, textarea {
+  transition-property: none;
+}
+
+input, textarea, button, .action-btn, .nav-item, .md-card, .suggestion {
+  transition: var(--transition);
 }
   </style>
 </head>
@@ -1658,14 +1956,21 @@ body {
     let graphEdgesDS = null;
     let graphRawData = null;
     let selectedNodes = new Set();
+    let applyFocusDimmingFn = null;
     const activeTypeFilters = new Set(['person','topic','content','project','place','goal']);
     let activeTimeFilter = 0;
     let searchQuery = '';
     let verifiedOnly = false;
 
     const TYPE_COLORS = {
-      app: '#64748b', person: '#3b82f6', topic: '#4ade80',
-      content: '#f97316', place: '#ef4444', project: '#a78bfa', goal: '#f59e0b',
+      app: '#71717a',      // zinc
+      person: '#6366f1',   // indigo (accent)
+      topic: '#22c55e',    // green
+      content: '#f97316',  // orange
+      place: '#ef4444',    // red
+      project: '#a855f7',  // purple
+      goal: '#eab308',     // yellow
+      skill: '#06b6d4',    // cyan
     };
 
     function fmtTime(ts) {
@@ -1780,21 +2085,24 @@ body {
       if (!d) { detail.innerHTML = '<div style="color:var(--text-muted);">Node not found</div>'; return; }
 
       const color = TYPE_COLORS[d.type] || '#64748b';
-      let html = `<div class="inspector-section">
-        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">${d.label}</div>
-        <span class="inspector-badge" style="background:${color};color:#0f172a;">${d.type}</span>
-        ${d.verified ? '<span style="color:#4ade80;font-size:10px;margin-left:4px;font-weight:500;">&#10003; Verified</span>' : '<span style="color:var(--text-muted);font-size:10px;margin-left:4px;">Unverified</span>'}
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-          ${d.mentions} mentions &middot; ${(d.contexts || []).length} context${(d.contexts || []).length !== 1 ? 's' : ''} &middot; since ${fmtTime(d.firstSeen)}
-        </div>
-        ${(d.contexts || []).length > 0 ? '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Seen in: ' + d.contexts.join(', ') + '</div>' : ''}
-      </div>`;
+      let html = `<div class="inspector-detail-header">Entity Details</div>
+        <div class="inspector-entity-card">
+          <div class="inspector-entity-title">${escapeHtml(d.label)}</div>
+          <span class="inspector-badge" style="background:${color};color:#0f172a;">${d.type}</span>
+          ${d.verified ? '<span style="color:#4ade80;font-size:11px;margin-left:6px;font-weight:500;">&#10003; Verified</span>' : '<span style="color:var(--text-muted);font-size:11px;margin-left:6px;">Unverified</span>'}
+          <div class="inspector-metrics-row">
+            <span class="inspector-metric"><strong>${d.mentions}</strong> mentions</span>
+            <span class="inspector-metric"><strong>${(d.contexts || []).length}</strong> context${(d.contexts || []).length !== 1 ? 's' : ''}</span>
+            <span class="inspector-metric">since ${fmtTime(d.firstSeen)}</span>
+          </div>
+          ${(d.contexts || []).length > 0 ? '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Seen in: ' + escapeHtml(d.contexts.join(', ')) + '</div>' : ''}
+        </div>`;
 
       if (d.connections && d.connections.length > 0) {
         html += `<div class="inspector-section">
           <div class="inspector-section-title">Connected To</div>
           <div style="display:flex;flex-wrap:wrap;">
-            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${c.id}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${c.label} <span style="color:var(--text-muted)">${c.coOccurrences}x</span>${c.relation ? `<span style="color:var(--accent);font-size:10px;margin-left:4px">(${c.relation.replace(/_/g, ' ')})</span>` : ''}</span>`).join('')}
+            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${escapeHtml(c.id)}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${escapeHtml(c.label)} <span style="color:var(--text-muted);font-size:11px;">${c.coOccurrences}x</span>${c.relation ? `<span style="color:var(--accent);font-size:10px;margin-left:4px">(${escapeHtml(c.relation.replace(/_/g, ' '))})</span>` : ''}</span>`).join('')}
           </div>
         </div>`;
       }
@@ -1867,17 +2175,22 @@ body {
       const srcColor = TYPE_COLORS[d.source.type] || '#64748b';
       const tgtColor = TYPE_COLORS[d.target.type] || '#64748b';
 
-      const relationStr = d.relation ? ` &middot; <span style="color:var(--accent);">${d.relation.replace(/_/g, ' ')}</span>` : '';
-      let html = `<div class="inspector-section">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span class="inspector-badge" style="background:${srcColor};color:#0f172a;">${d.source.label}</span>
-          <span style="color:var(--text-muted);">&#8596;</span>
-          <span class="inspector-badge" style="background:${tgtColor};color:#0f172a;">${d.target.label}</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);">
-          Connected <strong>${d.weight}x</strong>${relationStr} — shared activity context or Nia memories
-        </div>
-      </div>`;
+      const relationStr = d.relation ? ` &middot; <span style="color:var(--accent);">${escapeHtml(d.relation.replace(/_/g, ' '))}</span>` : '';
+      let html = `<div class="inspector-detail-header">Connection Details</div>
+        <div class="inspector-entity-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="inspector-badge" style="background:${srcColor};color:#0f172a;">${escapeHtml(d.source.label)}</span>
+              <span style="color:var(--text-muted);font-size:14px;">&#8596;</span>
+              <span class="inspector-badge" style="background:${tgtColor};color:#0f172a;">${escapeHtml(d.target.label)}</span>
+            </div>
+          </div>
+          <div class="inspector-metrics-row" style="margin-top:12px;">
+            <span class="inspector-metric"><strong>${d.weight}</strong> connections</span>
+            ${relationStr ? '<span class="inspector-metric">' + relationStr + '</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Shared activity context or Nia memories</div>
+        </div>`;
 
       if (d.sharedActivity.length > 0) {
         html += `<div class="inspector-section">
@@ -1951,8 +2264,9 @@ body {
           const fontSize = Math.min(Math.max(10 + importance * 1.5, 10), 16);
           
           const isVerified = n.verified || false;
-          const bg = isVerified ? baseColor : baseColor + '99';
+          const bg = isVerified ? baseColor : baseColor + 'cc';
           const fontColor = isVerified ? '#f1f5f9' : '#94a3b8';
+          const haloColor = baseColor + '55';
           
           return {
             id: n.id,
@@ -1961,7 +2275,7 @@ body {
             color: {
               background: bg,
               border: baseColor,
-              highlight: { background: '#fff', border: baseColor },
+              highlight: { background: baseColor, border: '#fff' },
               hover: { background: baseColor, border: '#fff' },
             },
             font: { 
@@ -1984,6 +2298,8 @@ body {
           };
         }));
 
+        const EDGE_GREY = 'rgba(148, 163, 184, 0.28)';
+        const EDGE_FOCUS = 'rgba(34, 197, 94, 0.6)';
         graphEdgesDS = new vis.DataSet(data.edges.map((e, i) => ({
           id: `e${i}`,
           from: e.source,
@@ -1994,37 +2310,55 @@ body {
           _targetLabel: e.targetLabel,
           _relation: e.relation || null,
           label: '',
-          color: { color: 'rgba(148, 163, 184, 0.25)', highlight: 'rgba(59, 130, 246, 0.6)', hover: 'rgba(148, 163, 184, 0.5)' },
-          smooth: { type: 'continuous' },
+          color: { color: EDGE_GREY, highlight: 'rgba(99, 102, 241, 0.7)', hover: 'rgba(148, 163, 184, 0.45)' },
+          width: 1,
+          smooth: { type: 'continuous', roundness: 0.5 },
           hoverWidth: 2,
+          _from: e.source,
+          _to: e.target,
           hidden: false,
         })));
 
         if (window._graphZoomInterval) { clearInterval(window._graphZoomInterval); window._graphZoomInterval = null; }
         if (graphNetwork) graphNetwork.destroy();
 
+        const floatingPhysics = {
+          enabled: true,
+          solver: 'forceAtlas2Based',
+          forceAtlas2Based: {
+            gravitationalConstant: -40,
+            centralGravity: 0.006,
+            springLength: 160,
+            springConstant: 0.03,
+            damping: 0.65,
+            avoidOverlap: 0.5,
+          },
+          stabilization: { enabled: false },
+          minVelocity: 0.3,
+          maxVelocity: 12,
+        };
         graphNetwork = new vis.Network(container, { nodes: graphNodesDS, edges: graphEdgesDS }, {
           physics: {
             enabled: true,
             solver: 'forceAtlas2Based',
             forceAtlas2Based: {
-              gravitationalConstant: -80,
-              centralGravity: 0.01,
-              springLength: 100,
-              springConstant: 0.08,
-              damping: 0.4,
-              avoidOverlap: 0.5,
+              gravitationalConstant: -60,
+              centralGravity: 0.008,
+              springLength: 140,
+              springConstant: 0.04,
+              damping: 0.5,
+              avoidOverlap: 0.6,
             },
-            stabilization: { enabled: true, iterations: 200, updateInterval: 25 },
-            minVelocity: 0.75,
-            maxVelocity: 30,
+            stabilization: { enabled: true, iterations: 150, updateInterval: 20 },
+            minVelocity: 0.5,
+            maxVelocity: 20,
           },
           interaction: {
             hover: true,
-            tooltipDelay: 0,
+            tooltipDelay: 100,
             multiselect: true,
-            selectConnectedEdges: false,
-            zoomSpeed: 0.4,
+            selectConnectedEdges: true,
+            zoomSpeed: 0.3,
             zoomView: true,
             dragView: true,
             dragNodes: true,
@@ -2034,9 +2368,9 @@ body {
           nodes: {
             shape: 'dot',
             scaling: { 
-              min: 12, 
-              max: 45, 
-              label: { enabled: true, min: 10, max: 16, drawThreshold: 8 } 
+              min: 14, 
+              max: 50, 
+              label: { enabled: true, min: 11, max: 15, drawThreshold: 6 } 
             },
             borderWidth: 2,
             shadow: true,
@@ -2045,15 +2379,27 @@ body {
           edges: {
             scaling: { min: 2, max: 7 },
             selectionWidth: 2,
+            hoverWidth: 1.5,
             smooth: {
               enabled: true,
               type: 'continuous',
-              roundness: 0.5,
+              roundness: 0.4,
             },
+            chosen: {
+              edge: function(values, id, selected, hovering) {
+                if (selected) {
+                  values.width = 3;
+                  values.color = '#6366f1';
+                }
+                if (hovering) {
+                  values.width = 2.5;
+                }
+              }
+            }
           },
           layout: {
             improvedLayout: true,
-            clusterThreshold: 150,
+            clusterThreshold: 120,
           },
         });
 
@@ -2065,23 +2411,120 @@ body {
             el.textContent = Math.round(scale * 100) + '%';
           } catch {}
         }
+        let physicsDisabled = false;
         graphNetwork.once('stabilizationIterationsDone', () => {
           graphNetwork.setOptions({ physics: false });
-          graphNetwork.fit({ animation: { duration: 400 } });
+          physicsDisabled = true;
+          graphNetwork.fit({ animation: { duration: 500 } });
           updateZoomIndicator();
         });
         setTimeout(() => {
-          if (graphNetwork) {
+          if (graphNetwork && !physicsDisabled) {
             graphNetwork.setOptions({ physics: false });
-            graphNetwork.fit({ animation: { duration: 400 } });
+            physicsDisabled = true;
+            graphNetwork.fit({ animation: { duration: 500 } });
             updateZoomIndicator();
           }
         }, 2500);
+
+        // Floating feel when dragging: temporarily enable physics so connected nodes get pulled
+        graphNetwork.on('dragStart', () => {
+          if (physicsDisabled) {
+            graphNetwork.setOptions({ physics: floatingPhysics });
+            physicsDisabled = false;
+          }
+        });
+        graphNetwork.on('dragEnd', () => {
+          setTimeout(() => {
+            if (graphNetwork) {
+              graphNetwork.setOptions({ physics: false });
+              physicsDisabled = true;
+              updateZoomIndicator();
+            }
+          }, 500);
+        });
         graphNetwork.on('zoom', updateZoomIndicator);
         graphNetwork.on('animationFinished', updateZoomIndicator);
         window._graphZoomInterval = setInterval(updateZoomIndicator, 400);
 
         applyFilters();
+
+        // ── Focus dimming: dim non-connected nodes when a node/edge is selected ──
+        function getConnectedNodes(nodeIds) {
+          const set = new Set(nodeIds);
+          graphEdgesDS.forEach(edge => {
+            const from = edge._from || edge.from;
+            const to = edge._to || edge.to;
+            if (set.has(from) || set.has(to)) {
+              set.add(from);
+              set.add(to);
+            }
+          });
+          return set;
+        }
+        const DIM_COLOR = 'rgba(100, 116, 139, 0.45)';
+        const DIM_OPACITY = 0.12;
+        const FOCUS_EDGE_COLOR = 'rgba(34, 197, 94, 0.6)';
+        const FOCUS_EDGE_WIDTH = 2;
+        const TRANSITION_MS = 300;
+        const TRANSITION_STEPS = 12;
+        let focusDimTimeouts = [];
+
+        applyFocusDimmingFn = function(focusedNodeIds) {
+          if (!graphNodesDS || !graphEdgesDS) return;
+          focusDimTimeouts.forEach(clearTimeout);
+          focusDimTimeouts = [];
+          const focusSet = focusedNodeIds.length > 0 ? getConnectedNodes(focusedNodeIds) : null;
+          const stepMs = TRANSITION_MS / TRANSITION_STEPS;
+
+          const nodeStates = new Map();
+          graphNodesDS.forEach(node => {
+            const inFocus = !focusSet || focusSet.has(node.id);
+            const fromOpacity = node.opacity !== undefined ? node.opacity : 1;
+            nodeStates.set(node.id, { inFocus, node, fromOpacity });
+          });
+          const edgeStates = new Map();
+          graphEdgesDS.forEach(edge => {
+            const inFocus = !focusSet || (focusSet.has(edge._from || edge.from) && focusSet.has(edge._to || edge.to));
+            const fromWidth = edge.width !== undefined ? edge.width : 1;
+            edgeStates.set(edge.id, { inFocus, fromWidth });
+          });
+
+          for (let step = 1; step <= TRANSITION_STEPS; step++) {
+            const t = step / TRANSITION_STEPS;
+            const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            const id = setTimeout(() => {
+              nodeStates.forEach(({ inFocus, node, fromOpacity }, id) => {
+                const targetOpacity = inFocus ? 1 : DIM_OPACITY;
+                const opacity = fromOpacity + (targetOpacity - fromOpacity) * easeT;
+                const orig = node._originalColor;
+                const updates = { id };
+                if (inFocus) {
+                  updates.opacity = opacity;
+                  if (node._haloShadow) updates.shadow = node._haloShadow;
+                  if (orig) updates.color = { background: orig.background, border: orig.border, highlight: { background: node._baseColor, border: '#fff' }, hover: { background: node._baseColor, border: '#fff' } };
+                } else {
+                  updates.opacity = opacity;
+                  updates.shadow = false;
+                  updates.color = { background: DIM_COLOR, border: 'rgba(100, 116, 139, 0.5)', highlight: { background: DIM_COLOR, border: '#94a3b8' }, hover: { background: DIM_COLOR, border: '#94a3b8' } };
+                }
+                graphNodesDS.update(updates);
+              });
+              edgeStates.forEach(({ inFocus, fromWidth }, edgeId) => {
+                const targetWidth = inFocus ? FOCUS_EDGE_WIDTH : 1;
+                const width = fromWidth + (targetWidth - fromWidth) * easeT;
+                graphEdgesDS.update({
+                  id: edgeId,
+                  color: inFocus
+                    ? { color: FOCUS_EDGE_COLOR, highlight: 'rgba(99, 102, 241, 0.9)', hover: 'rgba(148, 163, 184, 0.5)' }
+                    : { color: EDGE_GREY, highlight: 'rgba(99, 102, 241, 0.4)', hover: 'rgba(148, 163, 184, 0.4)' },
+                  width,
+                });
+              });
+            }, stepMs * step);
+            focusDimTimeouts.push(id);
+          }
+        };
 
         // ── Hover tooltips ──
         let tooltipVisible = false;
@@ -2285,7 +2728,10 @@ body {
           } else if (params.edges.length > 0) {
             const edgeId = params.edges[0];
             const e = graphEdgesDS.get(edgeId);
-            if (e) showEdgeDetail(e.from, e.to);
+            if (e) {
+              applyFocusDimmingFn?.([e.from, e.to]);
+              showEdgeDetail(e.from, e.to);
+            }
           } else {
             if (!isShift) {
               selectedNodes.clear();
@@ -2337,10 +2783,10 @@ body {
         const weight = e.mentions || e.weight || 1;
         const importanceClass = weight >= 5 ? 'importance-high' : weight >= 2 ? 'importance-medium' : 'importance-low';
         return `
-          <label class="entity-filter-item ${isSelected ? 'selected' : ''}" data-id="${e.id}">
-            <input type="checkbox" ${isSelected ? 'checked' : ''} data-entity-id="${e.id}">
+          <label class="entity-filter-item ${isSelected ? 'selected' : ''}" data-id="${escapeHtml(e.id)}">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} data-entity-id="${escapeHtml(e.id)}">
             <span class="entity-dot" style="background:${typeColor}"></span>
-            <span class="${importanceClass}">${e.label}</span>
+            <span class="${importanceClass}">${escapeHtml(e.label)}</span>
             <span class="entity-weight">${weight}x</span>
           </label>
         `;
@@ -2450,6 +2896,7 @@ body {
       selectedNodes.clear();
       updateSelectionUI();
       if (graphNetwork) graphNetwork.unselectAll();
+      applyFocusDimmingFn?.([]);
     });
 
     // Graph actions

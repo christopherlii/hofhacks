@@ -101,12 +101,14 @@ function extractEntitiesFromActivity(
       }
     }
 
-    // Messaging app contacts
+    // Messaging app contacts - extract person name, not "Telegram on X" or "App - X"
     if (['Messages', 'Telegram', 'WhatsApp', 'Signal', 'Discord', 'Slack', 'iMessage'].includes(appName)) {
-      const cleanName = title.replace(/\s*[-–—|].*$/, '').trim();
-      // More strict name validation
-      if (cleanName.length > 1 && cleanName.length < 30 && !cleanName.match(/^\d+$/) && !cleanName.match(/^[^a-zA-Z]+$/)) {
-        store.addEntity(cleanName, 'person', getCurrentApp, appName, pageContext);
+      let personName = title.replace(/\s*[-–—|].*$/, '').trim();
+      // Normalize "Telegram on Christopher" / "Telegram @ Christopher" -> "Christopher"
+      const onMatch = personName.match(/^(?:Telegram|WhatsApp|Signal|Discord|Slack|Messages?)\s+(?:on|@)\s+(.+)$/i);
+      if (onMatch) personName = onMatch[1].trim();
+      if (personName.length > 1 && personName.length < 30 && !personName.match(/^\d+$/) && !personName.match(/^[^a-zA-Z]+$/)) {
+        store.addEntity(personName, 'person', getCurrentApp, appName, pageContext);
       }
     }
 
@@ -197,6 +199,8 @@ SKIP:
 - Single words that are too vague
 - Anything that looks like OCR noise
 - Generic terms ("user", "page", "document")
+- Git branch names (e.g. remove_edge_labels_and_filter_same-entity_edges)
+- PR titles, technical identifiers, snake_case code names
 
 RELATION TYPES:
 - working_on: Person actively working on a project

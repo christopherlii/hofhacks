@@ -1,7 +1,7 @@
 import type { EntityEdge, EntityNode } from '../../types';
 
 const CONTEXT_WINDOW_MS = 30_000; // 30 seconds - entities must appear within this window to be connected
-const MIN_COOCCURRENCE_FOR_EDGE = 2; // Require at least 2 co-occurrences before creating an edge
+const MIN_COOCCURRENCE_FOR_EDGE = 3; // Require at least 3 co-occurrences before creating an edge (stricter)
 const MAX_RECENT_CONTEXTS = 50; // Smaller window = tighter connections
 
 const SKIP_ENTITIES = new Set([
@@ -88,6 +88,23 @@ function findCanonicalNode(
       continue;
     }
     
+    // For person: "telegram on christopher" / "telegram christopher" should match "christopher"
+    if (type === 'person') {
+      const personMatch = n.match(/^(?:telegram|whatsapp|signal|discord|slack|messages?)\s+(?:on|@)?\s*(.+)$/i);
+      const personNorm = personMatch ? personMatch[1].trim() : n;
+      const nodePersonMatch = nodeNorm.match(/^(?:telegram|whatsapp|signal|discord|slack|messages?)\s+(?:on|@)?\s*(.+)$/i);
+      const nodePersonNorm = nodePersonMatch ? nodePersonMatch[1].trim() : nodeNorm;
+      if (personNorm === nodePersonNorm || (personNorm.length >= 3 && (nodePersonNorm.includes(personNorm) || personNorm.includes(nodePersonNorm)))) {
+        const exactTypeMatch = true;
+        const len = nodeNorm.length;
+        const score = 1000 + len * 10 + node.weight;
+        if (!best || score > (best.exactTypeMatch ? 1000 : 0) + best.len * 10 + best.weight) {
+          best = { id: node.id, len, weight: node.weight, exactTypeMatch: true };
+        }
+        continue;
+      }
+    }
+
     const [shorter, longer] = nSpaced.length <= nodeSpaced.length ? [nSpaced, nodeSpaced] : [nodeSpaced, nSpaced];
     const isMatch =
       longer.startsWith(shorter) ||
@@ -135,9 +152,13 @@ class EntityStore {
   ): void {
     const normalized = normalizeEntity(label);
     if (SKIP_ENTITIES.has(normalized) || normalized.length < 2) return;
-    
+
     // Skip if it looks like a file path or code artifact
     if (normalized.includes('/') || normalized.includes('\\') || normalized.match(/\.[a-z]{2,4}$/)) return;
+
+    // Skip git branch names, PR titles, technical identifiers (snake_case with 2+ segments)
+    const underscores = (label.match(/_/g) || []).length;
+    if (underscores >= 2 && label.length > 15 && /^[a-z0-9_]+$/i.test(label.replace(/-/g, '_'))) return;
 
     const canonicalId = findCanonicalNode(this.nodes, label, type);
     const id = canonicalId ?? `${type}:${normalized}`;
