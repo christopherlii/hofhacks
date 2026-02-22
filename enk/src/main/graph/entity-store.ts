@@ -30,7 +30,35 @@ const SKIP_ENTITIES = new Set([
 ]);
 
 function normalizeEntity(raw: string): string {
-  return raw.trim().toLowerCase().replace(/[^\w\s@#-]/g, '').trim();
+  return raw.trim().toLowerCase().replace(/^@+/, '').replace(/[^\w\s@#-]/g, '').trim();
+}
+
+/** Find canonical node for deduplication. Handles person (Ben→Benjamin Xu), place/topic (@NYU→NYU), project. */
+function findCanonicalNode(
+  nodes: Map<string, EntityNode>,
+  label: string,
+  type: EntityNode['type'],
+): string | null {
+  const n = normalizeEntity(label);
+  if (n.length < 2) return null;
+  const typesToCheck: EntityNode['type'][] = type === 'person' ? ['person'] : type === 'place' || type === 'topic' ? ['place', 'topic'] : type === 'project' ? ['project'] : [];
+  let best: { id: string; len: number } | null = null;
+  for (const node of nodes.values()) {
+    if (!typesToCheck.includes(node.type)) continue;
+    const nodeNorm = normalizeEntity(node.label);
+    if (nodeNorm === n) return node.id;
+    const [shorter, longer] = n.length <= nodeNorm.length ? [n, nodeNorm] : [nodeNorm, n];
+    const isMatch =
+      longer.startsWith(shorter) ||
+      longer.includes(` ${shorter}`) ||
+      longer.includes(`${shorter} `) ||
+      shorter.length >= 4 && longer.includes(shorter);
+    if (isMatch) {
+      const len = nodeNorm.length;
+      if (!best || len > best.len) best = { id: node.id, len };
+    }
+  }
+  return best?.id ?? null;
 }
 
 class EntityStore {
@@ -46,10 +74,10 @@ class EntityStore {
     contextHintForEdge?: string,
   ): void {
     const normalized = normalizeEntity(label);
-    const id = `${type}:${normalized}`;
-
     if (SKIP_ENTITIES.has(normalized) || normalized.length < 2) return;
 
+    const canonicalId = findCanonicalNode(this.nodes, label, type);
+    const id = canonicalId ?? `${type}:${normalized}`;
     const context = sourceContext || getCurrentApp() || 'unknown';
     const now = Date.now();
     const existing = this.nodes.get(id);
@@ -79,10 +107,21 @@ class EntityStore {
 
   pruneOrphanedEdges(): void {
     for (const [key, edge] of this.edges) {
-      if (!this.nodes.has(edge.source) || !this.nodes.has(edge.target)) {
+      if (
+        !this.nodes.has(edge.source) ||
+        !this.nodes.has(edge.target) ||
+        edge.source === edge.target
+      ) {
         this.edges.delete(key);
       }
     }
+  }
+
+  /** Clear all entities and edges. */
+  reset(): void {
+    this.nodes.clear();
+    this.edges.clear();
+    this.recentContexts.length = 0;
   }
 
   private updateCoOccurrences(newEntityId: string, newContextHint: string): void {
@@ -102,6 +141,36 @@ class EntityStore {
     while (this.recentContexts.length > CONTEXT_HINT_MAX) {
       this.recentContexts.shift();
     }
+  }
+
+  /** Add or strengthen an edge with a semantic relation. Resolves labels to node ids. */
+  addRelation(fromLabel: string, toLabel: string, relation: string): void {
+    const fromId = this.findNodeByLabel(fromLabel);
+    const toId = this.findNodeByLabel(toLabel);
+    if (!fromId || !toId || fromId === toId) return;
+    const [a, b] = [fromId, toId].sort();
+    const edgeKey = `${a}↔${b}`;
+    const existing = this.edges.get(edgeKey);
+    if (existing) {
+      existing.weight++;
+      if (relation && !existing.relation) existing.relation = relation;
+    } else {
+      this.edges.set(edgeKey, { source: a, target: b, weight: 1, relation });
+    }
+  }
+
+  private findNodeByLabel(label: string): string | null {
+    const n = normalizeEntity(label);
+    if (n.length < 2) return null;
+    let fallback: string | null = null;
+    for (const node of this.nodes.values()) {
+      const nodeNorm = normalizeEntity(node.label);
+      if (nodeNorm === n) return node.id;
+      if (n.length < nodeNorm.length && (nodeNorm.startsWith(n) || nodeNorm.includes(` ${n}`) || nodeNorm.includes(`${n} `))) {
+        fallback ??= node.id;
+      }
+    }
+    return fallback;
   }
 }
 

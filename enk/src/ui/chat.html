@@ -734,6 +734,8 @@
           </div>
           <div id="graphCanvas" style="flex:1;position:relative;margin:0 8px 8px 16px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border);overflow:hidden;">
             <div id="graphContainer" style="width:100%;height:100%;"></div>
+            <!-- Zoom indicator -->
+            <div id="graphZoomIndicator" style="position:absolute;bottom:10px;right:10px;padding:4px 8px;border-radius:6px;background:rgba(15,23,42,0.85);border:1px solid rgba(148,163,184,0.25);font-size:11px;color:var(--text-muted);pointer-events:none;z-index:50;">100%</div>
             <!-- Hover tooltip -->
             <div id="graphTooltip" style="display:none;position:absolute;pointer-events:none;z-index:100;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);border:1px solid rgba(148,163,184,0.2);font-size:12px;color:#e2e8f0;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-width:280px;"></div>
           </div>
@@ -745,12 +747,12 @@
           <div style="padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
             <input type="text" id="graphSearch" placeholder="Search entities..." style="width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text-primary);font-size:12px;outline:none;margin-bottom:8px;">
             <div id="typeFilters" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-              <button class="graph-chip active" data-type="app" style="--chip-color:#64748b;">App</button>
               <button class="graph-chip active" data-type="person" style="--chip-color:#3b82f6;">Person</button>
               <button class="graph-chip active" data-type="topic" style="--chip-color:#4ade80;">Topic</button>
               <button class="graph-chip active" data-type="content" style="--chip-color:#f97316;">Content</button>
               <button class="graph-chip active" data-type="project" style="--chip-color:#a78bfa;">Project</button>
               <button class="graph-chip active" data-type="place" style="--chip-color:#ef4444;">Place</button>
+              <button class="graph-chip active" data-type="goal" style="--chip-color:#f59e0b;">Goal</button>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
               <div id="timeFilter" style="display:flex;gap:3px;">
@@ -763,6 +765,16 @@
                 <input type="checkbox" id="verifiedOnly" style="width:12px;height:12px;accent-color:var(--green);"> Verified
               </label>
             </div>
+          </div>
+
+          <!-- Graph actions -->
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+              <button id="exportGraphTextBtn" style="font-size:11px;padding:8px 12px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;" title="Copy text representation of the full graph">Export as text</button>
+              <button id="pruneNoiseBtn" style="font-size:11px;padding:8px 12px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;" title="Use AI to remove noise nodes (generic words, UI artifacts) and merge duplicates">Prune noise</button>
+              <button id="resetGraphBtn" style="font-size:11px;padding:8px 12px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--red, #ef4444);cursor:pointer;" title="Clear all entities and connections. Starts fresh.">Reset graph</button>
+            </div>
+            <div id="graphActionStatus" style="font-size:10px;color:var(--text-muted);min-height:14px;white-space:pre-wrap;"></div>
           </div>
 
           <!-- What Enk Knows (understanding gauge) -->
@@ -1216,14 +1228,14 @@
     let graphEdgesDS = null;
     let graphRawData = null;
     let selectedNodes = new Set();
-    const activeTypeFilters = new Set(['app','person','topic','content','project','place']);
+    const activeTypeFilters = new Set(['person','topic','content','project','place','goal']);
     let activeTimeFilter = 0;
     let searchQuery = '';
     let verifiedOnly = false;
 
     const TYPE_COLORS = {
       app: '#64748b', person: '#3b82f6', topic: '#4ade80',
-      content: '#f97316', place: '#ef4444', project: '#a78bfa',
+      content: '#f97316', place: '#ef4444', project: '#a78bfa', goal: '#f59e0b',
     };
 
     function fmtTime(ts) {
@@ -1339,7 +1351,7 @@
         html += `<div class="inspector-section">
           <div class="inspector-section-title">Connected To</div>
           <div style="display:flex;flex-wrap:wrap;">
-            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${c.id}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${c.label} <span style="color:var(--text-muted)">${c.coOccurrences}x</span></span>`).join('')}
+            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${c.id}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${c.label} <span style="color:var(--text-muted)">${c.coOccurrences}x</span>${c.relation ? `<span style="color:var(--accent);font-size:10px;margin-left:4px">(${c.relation.replace(/_/g, ' ')})</span>` : ''}</span>`).join('')}
           </div>
         </div>`;
       }
@@ -1412,6 +1424,7 @@
       const srcColor = TYPE_COLORS[d.source.type] || '#64748b';
       const tgtColor = TYPE_COLORS[d.target.type] || '#64748b';
 
+      const relationStr = d.relation ? ` &middot; <span style="color:var(--accent);">${d.relation.replace(/_/g, ' ')}</span>` : '';
       let html = `<div class="inspector-section">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span class="inspector-badge" style="background:${srcColor};color:#0f172a;">${d.source.label}</span>
@@ -1419,7 +1432,7 @@
           <span class="inspector-badge" style="background:${tgtColor};color:#0f172a;">${d.target.label}</span>
         </div>
         <div style="font-size:12px;color:var(--text-secondary);">
-          Connected <strong>${d.weight}x</strong> — shared activity context or Nia memories
+          Connected <strong>${d.weight}x</strong>${relationStr} — shared activity context or Nia memories
         </div>
       </div>`;
 
@@ -1517,12 +1530,15 @@
           _weight: e.weight,
           _sourceLabel: e.sourceLabel,
           _targetLabel: e.targetLabel,
+          _relation: e.relation || null,
+          label: '',
           color: { color: 'rgba(148, 163, 184, 0.25)', highlight: 'rgba(59, 130, 246, 0.6)', hover: 'rgba(148, 163, 184, 0.5)' },
           smooth: { type: 'continuous' },
           hoverWidth: 2,
           hidden: false,
         })));
 
+        if (window._graphZoomInterval) { clearInterval(window._graphZoomInterval); window._graphZoomInterval = null; }
         if (graphNetwork) graphNetwork.destroy();
 
         graphNetwork = new vis.Network(container, { nodes: graphNodesDS, edges: graphEdgesDS }, {
@@ -1532,24 +1548,28 @@
             barnesHut: {
               gravitationalConstant: -2000,
               centralGravity: 0.03,
-              springLength: 150,
+              springLength: 120,
               springConstant: 0.04,
-              damping: 0.06,
-              avoidOverlap: 0.15,
+              damping: 0.08,
+              avoidOverlap: 0.2,
             },
-            stabilization: { enabled: false },
+            stabilization: { enabled: true, iterations: 150, updateInterval: 25 },
             minVelocity: 0.5,
-            maxVelocity: 20,
+            maxVelocity: 15,
           },
           interaction: {
             hover: true,
             tooltipDelay: 0,
             multiselect: false,
             selectConnectedEdges: false,
+            zoomSpeed: 0.45,
+            zoomView: true,
+            dragView: true,
+            dragNodes: true,
           },
           nodes: {
             shape: 'dot',
-            scaling: { min: 8, max: 28, label: { enabled: true, min: 10, max: 16 } },
+            scaling: { min: 16, max: 36, label: { enabled: true, min: 12, max: 18 } },
             borderWidth: 2,
             shadow: false,
           },
@@ -1558,6 +1578,30 @@
             selectionWidth: 2,
           },
         });
+
+        function updateZoomIndicator() {
+          const el = document.getElementById('graphZoomIndicator');
+          if (!el || !graphNetwork) return;
+          try {
+            const scale = graphNetwork.getScale();
+            el.textContent = Math.round(scale * 100) + '%';
+          } catch {}
+        }
+        graphNetwork.once('stabilizationIterationsDone', () => {
+          graphNetwork.setOptions({ physics: false });
+          graphNetwork.fit({ animation: { duration: 400 } });
+          updateZoomIndicator();
+        });
+        setTimeout(() => {
+          if (graphNetwork) {
+            graphNetwork.setOptions({ physics: false });
+            graphNetwork.fit({ animation: { duration: 400 } });
+            updateZoomIndicator();
+          }
+        }, 2500);
+        graphNetwork.on('zoom', updateZoomIndicator);
+        graphNetwork.on('animationFinished', updateZoomIndicator);
+        window._graphZoomInterval = setInterval(updateZoomIndicator, 400);
 
         applyFilters();
 
@@ -1596,7 +1640,8 @@
         graphNetwork.on('hoverEdge', (params) => {
           const e = graphEdgesDS.get(params.edge);
           if (!e) return;
-          tooltip.innerHTML = `<span style="font-weight:600;">${e._sourceLabel || '?'}</span> <span style="color:var(--text-muted);">&#8596;</span> <span style="font-weight:600;">${e._targetLabel || '?'}</span><br><span style="color:var(--text-muted);font-size:11px;">connected ${e._weight}x</span>`;
+          const relStr = e._relation ? `<br><span style="color:var(--accent);font-size:11px;">${e._relation.replace(/_/g, ' ')}</span>` : '';
+          tooltip.innerHTML = `<span style="font-weight:600;">${e._sourceLabel || '?'}</span> <span style="color:var(--text-muted);">&#8596;</span> <span style="font-weight:600;">${e._targetLabel || '?'}</span>${relStr}<br><span style="color:var(--text-muted);font-size:11px;">connected ${e._weight}x</span>`;
           tooltip.style.display = 'block';
           tooltipVisible = true;
         });
@@ -1685,6 +1730,43 @@
       selectedNodes.clear();
       updateSelectionUI();
       if (graphNetwork) graphNetwork.unselectAll();
+    });
+
+    // Graph actions
+    const graphActionStatus = document.getElementById('graphActionStatus');
+    document.getElementById('exportGraphTextBtn').addEventListener('click', async () => {
+      try {
+        const data = await window.enk.getEntityGraph();
+        const lines = [...(data.nodes || []).map(n => `${n.label} (${n.type})`), '', 'Connections:', ...(data.edges || []).map(e => `${e.sourceLabel || e.source} — ${e.targetLabel || e.target}`)];
+        await navigator.clipboard.writeText(lines.join('\n'));
+        const btn = document.getElementById('exportGraphTextBtn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      } catch (e) {
+        graphActionStatus.textContent = 'Export failed: ' + (e?.message || 'Unknown');
+      }
+    });
+    document.getElementById('pruneNoiseBtn').addEventListener('click', async () => {
+      graphActionStatus.textContent = 'Pruning...';
+      try {
+        const result = await window.enk.pruneGraphNoise();
+        graphActionStatus.textContent = result.nodesRemoved > 0 || result.edgesRemoved > 0
+          ? `Pruned ${result.nodesRemoved} nodes, ${result.edgesRemoved} edges` : 'Noise already clean';
+        renderGraph();
+      } catch (e) {
+        graphActionStatus.textContent = 'Prune failed: ' + (e?.message || 'Unknown');
+      }
+    });
+    document.getElementById('resetGraphBtn').addEventListener('click', async () => {
+      if (!confirm('Clear all entities and connections? This cannot be undone.')) return;
+      try {
+        await window.enk.resetGraph();
+        graphActionStatus.textContent = 'Graph reset';
+        renderGraph();
+      } catch (e) {
+        graphActionStatus.textContent = 'Reset failed: ' + (e?.message || 'Unknown');
+      }
     });
   </script>
 </body>

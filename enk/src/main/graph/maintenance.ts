@@ -92,16 +92,18 @@ async function cleanupGraph(
   getStore: () => any,
   claudeRequest: (body: ClaudeRequestBody) => Promise<ClaudeResponse | null>,
   saveGraphToStore: () => void,
-): Promise<void> {
+): Promise<{ nodesRemoved: number; edgesRemoved: number }> {
+  const beforeNodes = entityStore.nodes.size;
+  const beforeEdges = entityStore.edges.size;
   const store = getStore();
-  if (!store?.get('anthropicKey')) return;
+  if (!store?.get('anthropicKey')) return { nodesRemoved: 0, edgesRemoved: 0 };
 
   const unverified = Array.from(entityStore.nodes.values())
     .filter((node) => !node.verified && node.type !== 'app')
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 60);
 
-  if (unverified.length === 0) return;
+  if (unverified.length === 0) return { nodesRemoved: 0, edgesRemoved: 0 };
 
   const entityList = unverified
     .map(
@@ -115,22 +117,22 @@ async function cleanupGraph(
     max_tokens: 500,
     system: `You classify entities from a personal computer activity graph as signal or noise.
 
-SIGNAL = personally meaningful to the user: real people, specific topics of interest, projects, specific content (videos/articles), real places.
-NOISE = UI artifacts, generic words, system processes, navigation elements, partial words, single letters, common words that aren't topics.
+SIGNAL = personally meaningful: real people, specific topics of interest, projects, specific content (videos/articles), real places, goals (vacations, plans).
+NOISE = UI artifacts, generic words ("loading", "untitled", "new tab"), system processes, navigation elements, partial words, single letters, app names as topics, placeholder text, roles ("user", "admin").
 
 Return JSON: {"keep": ["entity_id", ...], "remove": ["entity_id", ...], "merge": [{"into": "entity_id", "from": ["entity_id", ...]}, ...]}
 
-For merge: combine duplicate/similar entities (e.g. "Japan" and "japan travel" → keep the more descriptive one).
+For merge: combine duplicate/similar entities (e.g. "Japan" and "japan travel" → keep the more descriptive one; "Ben" and "Benjamin Xu" → keep "Benjamin Xu").
 Be aggressive about removing noise. When in doubt, remove.`,
     messages: [{ role: 'user', content: entityList }],
   });
 
-  if (!data) return;
+  if (!data) return { nodesRemoved: 0, edgesRemoved: 0 };
   const text = data.content?.[0]?.text;
-  if (!text) return;
+  if (!text) return { nodesRemoved: 0, edgesRemoved: 0 };
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return;
+  if (!jsonMatch) return { nodesRemoved: 0, edgesRemoved: 0 };
 
   try {
     const result: { keep?: string[]; remove?: string[]; merge?: { into: string; from: string[] }[] } = JSON.parse(
@@ -189,6 +191,9 @@ Be aggressive about removing noise. When in doubt, remove.`,
   } catch (err: any) {
     console.error('[Enk] Graph cleanup parse error:', err.message);
   }
+  const nodesRemoved = beforeNodes - entityStore.nodes.size;
+  const edgesRemoved = beforeEdges - entityStore.edges.size;
+  return { nodesRemoved, edgesRemoved };
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {

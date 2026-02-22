@@ -17,6 +17,8 @@ interface CreateIpcRegistrationDeps {
   getEntityGraph: () => unknown;
   getNodeDetail: (nodeId: string) => unknown;
   getEdgeDetail: (sourceId: string, targetId: string) => unknown;
+  pruneGraphNoise: () => Promise<{ nodesRemoved: number; edgesRemoved: number }>;
+  resetGraph: () => void;
   previewGraphGroup: (nodeIds: string[]) => Promise<{ preview?: string }>;
   getUnderstandingPreview: () => unknown;
   analyzeGraphGroup: (nodeIds: string[]) => Promise<unknown>;
@@ -52,6 +54,8 @@ function createIpcRegistration(deps: CreateIpcRegistrationDeps) {
       getEntityGraph: deps.getEntityGraph,
       getNodeDetail: deps.getNodeDetail,
       getEdgeDetail: deps.getEdgeDetail,
+      pruneGraphNoise: deps.pruneGraphNoise,
+      resetGraph: deps.resetGraph,
       previewGraphGroup: deps.previewGraphGroup,
       getUnderstandingPreview: deps.getUnderstandingPreview,
       analyzeGraphGroup: deps.analyzeGraphGroup,

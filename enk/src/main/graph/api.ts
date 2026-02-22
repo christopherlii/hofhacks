@@ -78,8 +78,12 @@ function createGraphApi(deps: CreateGraphApiDeps) {
     await getGraphService().buildNiaEdges();
   }
 
-  async function cleanupGraph(): Promise<void> {
-    await getGraphService().cleanupGraph();
+  async function cleanupGraph(): Promise<{ nodesRemoved: number; edgesRemoved: number }> {
+    return getGraphService().cleanupGraph();
+  }
+
+  function resetGraph(): void {
+    getGraphService().resetGraph();
   }
 
   function getGraphData(includeContext = false): { nodes: any[]; edges: any[] } {
@@ -112,6 +116,7 @@ function createGraphApi(deps: CreateGraphApiDeps) {
     aiExtractEntities,
     buildNiaEdges,
     cleanupGraph,
+    resetGraph,
     getGraphData,
     getNodeDetailData,
     getEdgeDetailData,

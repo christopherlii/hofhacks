@@ -1,5 +1,6 @@
 import type { ActivityEntry, ContentSnapshot } from '../../types';
 import type { EntityStore } from './entity-store';
+import { normalizeEntity } from './entity-store';
 
 interface QueryDeps {
   getAllActivity: () => ActivityEntry[];
@@ -9,16 +10,45 @@ interface QueryDeps {
 }
 
 function getGraphData(store: EntityStore, deps: QueryDeps, includeContext = false): { nodes: any[]; edges: any[] } {
-  const nodes = Array.from(store.nodes.values())
-    .map((node) => ({ ...node, _score: node.weight * (node.verified ? 3 : 1) * Math.max(1, node.contexts.length) }))
+  const now = Date.now();
+  const recencyBoost = (ms: number) => {
+    const hours = (now - ms) / (60 * 60 * 1000);
+    if (hours < 1) return 2;
+    if (hours < 24) return 1.5;
+    if (hours < 168) return 1.2;
+    return 1;
+  };
+  const scoredNodes = Array.from(store.nodes.values())
+    .map((node) => ({
+      ...node,
+      _score:
+        node.weight *
+        (node.verified ? 3 : 1) *
+        Math.max(1, node.contexts.length) *
+        recencyBoost(node.lastSeen),
+    }))
     .sort((a, b) => b._score - a._score)
-    .slice(0, 80);
+    .slice(0, 120);
 
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  const edges = Array.from(store.edges.values())
-    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+  let nodeIds = new Set(scoredNodes.map((node) => node.id));
+  const MIN_EDGE_WEIGHT = 2;
+  let edges = Array.from(store.edges.values())
+    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target) && edge.source !== edge.target && edge.weight >= MIN_EDGE_WEIGHT)
     .sort((a, b) => b.weight - a.weight)
-    .slice(0, 200);
+    .slice(0, 250);
+
+  // Filter out one-off nodes (no edges) — keep only nodes with meaningful relationships
+  const connectedIds = new Set<string>();
+  for (const edge of edges) {
+    connectedIds.add(edge.source);
+    connectedIds.add(edge.target);
+  }
+  const nodes =
+    connectedIds.size > 0
+      ? scoredNodes.filter((n) => connectedIds.has(n.id)).slice(0, 80)
+      : scoredNodes.slice(0, 30);
+  nodeIds = new Set(nodes.map((n) => n.id));
+  edges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target)).slice(0, 200);
 
   const enrichedNodes = nodes.map((node) => {
     const base = {
@@ -34,17 +64,23 @@ function getGraphData(store: EntityStore, deps: QueryDeps, includeContext = fals
     return base;
   });
 
-  const enrichedEdges = edges.map((edge) => {
-    const sourceNode = store.nodes.get(edge.source);
-    const targetNode = store.nodes.get(edge.target);
-    return {
-      ...edge,
-      sourceLabel: sourceNode?.label || edge.source,
-      targetLabel: targetNode?.label || edge.target,
-      sourceType: sourceNode?.type || 'topic',
-      targetType: targetNode?.type || 'topic',
-    };
-  });
+  const enrichedEdges = edges
+    .map((edge) => {
+      const sourceNode = store.nodes.get(edge.source);
+      const targetNode = store.nodes.get(edge.target);
+      return {
+        ...edge,
+        sourceLabel: sourceNode?.label || edge.source,
+        targetLabel: targetNode?.label || edge.target,
+        sourceType: sourceNode?.type || 'topic',
+        targetType: targetNode?.type || 'topic',
+        relation: edge.relation,
+      };
+    })
+    .filter(
+      (edge) =>
+        normalizeEntity(edge.sourceLabel || '') !== normalizeEntity(edge.targetLabel || '')
+    );
 
   return { nodes: enrichedNodes, edges: enrichedEdges };
 }
@@ -67,6 +103,7 @@ function getNodeDetailData(store: EntityStore, deps: QueryDeps, nodeId: string):
       label: other?.label || otherId,
       type: other?.type || 'topic',
       coOccurrences: edge.weight,
+      relation: edge.relation,
     };
   });
 
@@ -103,6 +140,7 @@ function getEdgeDetailData(store: EntityStore, deps: QueryDeps, sourceId: string
     source: { id: sourceId, label: srcNode?.label, type: srcNode?.type },
     target: { id: targetId, label: tgtNode?.label, type: tgtNode?.type },
     weight: edge.weight,
+    relation: edge.relation,
     sharedActivity,
   };
 }

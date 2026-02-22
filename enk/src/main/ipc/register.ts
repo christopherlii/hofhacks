@@ -17,6 +17,8 @@ interface AppIpcDeps {
   getEntityGraph: () => unknown;
   getNodeDetail: (nodeId: string) => unknown;
   getEdgeDetail: (sourceId: string, targetId: string) => unknown;
+  pruneGraphNoise: () => Promise<{ nodesRemoved: number; edgesRemoved: number }>;
+  resetGraph: () => void;
   previewGraphGroup: (nodeIds: string[]) => Promise<{ preview?: string }>;
   getUnderstandingPreview: () => unknown;
   analyzeGraphGroup: (nodeIds: string[]) => Promise<unknown>;
@@ -55,6 +57,8 @@ function registerAppIpcHandlers(deps: AppIpcDeps): void {
   ipcMain.handle('get-entity-graph', () => deps.getEntityGraph());
   ipcMain.handle('get-node-detail', (_event, nodeId: string) => deps.getNodeDetail(nodeId));
   ipcMain.handle('get-edge-detail', (_event, sourceId: string, targetId: string) => deps.getEdgeDetail(sourceId, targetId));
+  ipcMain.handle('prune-graph-noise', async () => deps.pruneGraphNoise());
+  ipcMain.handle('reset-graph', () => deps.resetGraph());
   ipcMain.handle('preview-graph-group', async (_event, nodeIds: string[]) => deps.previewGraphGroup(nodeIds));
   ipcMain.handle('get-understanding-preview', () => deps.getUnderstandingPreview());
   ipcMain.handle('analyze-graph-group', async (_event, nodeIds: string[]) => deps.analyzeGraphGroup(nodeIds));

@@ -251,6 +251,8 @@ const ipcRegistration = createIpcRegistration({
   getEntityGraph: () => graphApi.getGraphData(),
   getNodeDetail: (nodeId) => graphApi.getNodeDetailData(nodeId),
   getEdgeDetail: (sourceId, targetId) => graphApi.getEdgeDetailData(sourceId, targetId),
+  pruneGraphNoise: () => graphApi.cleanupGraph(),
+  resetGraph: () => graphApi.resetGraph(),
   previewGraphGroup: insightsApi.previewGraphGroup,
   getUnderstandingPreview: insightsApi.getUnderstandingPreview,
   analyzeGraphGroup: insightsApi.analyzeGraphGroup,

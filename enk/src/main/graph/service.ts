@@ -90,7 +90,7 @@ class GraphService {
 
     try {
       const nodes: any[] = (configStore.get('graphNodes') as any[]) || [];
-      const edges: { key: string; source: string; target: string; weight: number }[] =
+      const edges: { key: string; source: string; target: string; weight: number; relation?: string }[] =
         (configStore.get('graphEdges') as any[]) || [];
 
       for (const node of nodes) {
@@ -101,7 +101,12 @@ class GraphService {
         });
       }
       for (const edge of edges) {
-        this.store.edges.set(edge.key, { source: edge.source, target: edge.target, weight: edge.weight });
+        this.store.edges.set(edge.key, {
+          source: edge.source,
+          target: edge.target,
+          weight: edge.weight,
+          relation: edge.relation,
+        });
       }
 
       if (nodes.length > 0) {
@@ -132,8 +137,13 @@ class GraphService {
     await buildNiaEdges(this.store, this.deps.getStore, this.deps.nia, () => this.saveGraphToStore());
   }
 
-  async cleanupGraph(): Promise<void> {
-    await cleanupGraph(this.store, this.deps.getStore, this.deps.claudeRequest, () => this.saveGraphToStore());
+  async cleanupGraph(): Promise<{ nodesRemoved: number; edgesRemoved: number }> {
+    return cleanupGraph(this.store, this.deps.getStore, this.deps.claudeRequest, () => this.saveGraphToStore());
+  }
+
+  resetGraph(): void {
+    this.store.reset();
+    this.saveGraphToStore();
   }
 
   getGraphData(includeContext = false): { nodes: any[]; edges: any[] } {

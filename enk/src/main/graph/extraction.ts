@@ -92,6 +92,13 @@ async function aiExtractEntities(
     .map((snapshot) => `[${snapshot.app}] ${snapshot.summary}`)
     .slice(-10);
 
+  // Include raw OCR text from screenshots (not just summaries) for richer entity extraction
+  const screenTexts = newSnapshots
+    .filter((snapshot) => (snapshot.text?.trim().length ?? 0) >= 30)
+    .slice(-8)
+    .map((snapshot) => `[${snapshot.app}] ${snapshot.title || ''}: ${(snapshot.text || '').slice(0, 350).replace(/\n/g, ' ')}`)
+    .filter((s) => s.length > 40);
+
   const recentTitles = deps
     .getAllActivity()
     .slice(-15)
@@ -109,25 +116,28 @@ async function aiExtractEntities(
     .map((entry) => `Clipboard: "${entry.text.slice(0, 150)}"`)
     .join('\n');
 
-  const input = [recentTitles, summaryTexts.join('\n'), clipTexts].filter(Boolean).join('\n\n');
+  const input = [recentTitles, summaryTexts.join('\n'), screenTexts.length ? 'Screen content:\n' + screenTexts.join('\n') : '', clipTexts].filter(Boolean).join('\n\n');
   if (input.length < 30) return;
 
   const data = await deps.claudeRequest({
     model: 'claude-haiku-4-5',
-    max_tokens: 400,
-    system: `Extract meaningful personal entities from computer activity. Return JSON array of objects.
+    max_tokens: 500,
+    system: `Extract meaningful personal entities and their relationships from computer activity. Return a single JSON object:
 
-Each object: {"label": "name", "type": "person|topic|project|content|place", "confidence": "high|medium"}
+{"entities": [{"label": "name", "type": "person|topic|project|content|place|goal", "confidence": "high|medium"}], "relations": [{"from": "label1", "to": "label2", "relation": "working_on|planning|interested_in|related_to"}]}
 
-Rules:
-- PEOPLE: real names, usernames, contacts. NOT app names, NOT generic words.
-- TOPICS: specific subjects the user is researching or interested in (e.g. "machine learning", "Japan travel", "mechanical keyboards"). NOT generic words like "Settings" or "Loading".
-- PROJECTS: named projects, repos, codebases.
-- CONTENT: specific videos, articles, songs, podcasts by title.
-- PLACES: cities, countries, restaurants, venues.
-- Only extract entities with PERSONAL RELEVANCE to the user.
-- Skip UI elements, generic navigation, system processes.
-- Max 10 entities. Return [] if nothing meaningful.`,
+Entity rules:
+- PEOPLE: real names, usernames, contacts.
+- PROJECTS: named projects, repos (e.g. Hofhacks, Catan).
+- PLACES, CONTENT, TOPICS, GOAL: as before.
+- Max 10 entities. Skip UI/generic words.
+
+Relation rules (use entity labels exactly):
+- working_on: person + project (e.g. "Benjamin Xu" working on "Hofhacks")
+- planning: person + goal, or topic + goal
+- interested_in: person + topic
+- related_to: when entities appear together but no specific relation
+- Max 5 relations. Only between entities you extracted.`,
     messages: [{ role: 'user', content: input }],
   });
 
@@ -135,24 +145,55 @@ Rules:
   const text = data.content?.[0]?.text;
   if (!text) return;
 
-  const match = text.match(/\[[\s\S]*\]/);
-  if (!match) return;
+  const objMatch = text.match(/\{[\s\S]*\}/);
+  const arrMatch = text.match(/\[[\s\S]*\]/);
 
   try {
-    const entities: { label: string; type: EntityNode['type']; confidence: string }[] = JSON.parse(match[0]);
-    const contextHint = `ai:${input.slice(0, 150)}`;
-    for (const entity of entities) {
-      if (!entity.label || !entity.type) continue;
-      entityStore.addEntity(entity.label, entity.type, deps.getCurrentApp, 'ai-extract', contextHint);
-      if (entity.confidence === 'high') {
-        const id = `${entity.type}:${normalizeEntity(entity.label)}`;
-        const node = entityStore.nodes.get(id);
-        if (node) node.verified = true;
-      }
-    }
+    if (objMatch) {
+      const parsed = JSON.parse(objMatch[0]) as {
+        entities?: { label: string; type: EntityNode['type']; confidence: string }[];
+        relations?: { from: string; to: string; relation: string }[];
+      };
+      const entities = parsed.entities ?? [];
+      const relations = parsed.relations ?? [];
 
-    if (entities.length > 0) {
-      console.log(`[Enk] AI extracted: ${entities.map((entity) => entity.label).join(', ')}`);
+      const contextHint = `ai:${input.slice(0, 150)}`;
+      for (const entity of entities) {
+        if (!entity.label || !entity.type) continue;
+        entityStore.addEntity(entity.label, entity.type, deps.getCurrentApp, 'ai-extract', contextHint);
+        if (entity.confidence === 'high') {
+          const id = `${entity.type}:${normalizeEntity(entity.label)}`;
+          const node = entityStore.nodes.get(id);
+          if (node) node.verified = true;
+        }
+      }
+
+      for (const rel of relations) {
+        if (rel.from && rel.to && rel.relation) {
+          entityStore.addRelation(rel.from.trim(), rel.to.trim(), rel.relation);
+        }
+      }
+
+      if (entities.length > 0 || relations.length > 0) {
+        console.log(`[Enk] AI extracted: ${entities.map((e) => e.label).join(', ')}${relations.length ? `; ${relations.length} relations` : ''}`);
+      }
+      return;
+    }
+    if (arrMatch) {
+      const entities: { label: string; type: EntityNode['type']; confidence: string }[] = JSON.parse(arrMatch[0]);
+      const contextHint = `ai:${input.slice(0, 150)}`;
+      for (const entity of entities) {
+        if (!entity.label || !entity.type) continue;
+        entityStore.addEntity(entity.label, entity.type, deps.getCurrentApp, 'ai-extract', contextHint);
+        if (entity.confidence === 'high') {
+          const id = `${entity.type}:${normalizeEntity(entity.label)}`;
+          const node = entityStore.nodes.get(id);
+          if (node) node.verified = true;
+        }
+      }
+      if (entities.length > 0) {
+        console.log(`[Enk] AI extracted: ${entities.map((e) => e.label).join(', ')}`);
+      }
     }
   } catch {
     // ignore parse errors

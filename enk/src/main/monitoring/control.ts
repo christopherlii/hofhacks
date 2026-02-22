@@ -21,7 +21,7 @@ interface CreateMonitoringControlDeps {
   saveGraphToStore: () => void;
   aiExtractEntities: () => Promise<void>;
   decayGraph: () => void;
-  cleanupGraph: () => Promise<void>;
+  cleanupGraph: () => Promise<{ nodesRemoved: number; edgesRemoved: number }>;
   buildNiaEdges: () => Promise<void>;
   updateStatus: (status: string) => void;
 }

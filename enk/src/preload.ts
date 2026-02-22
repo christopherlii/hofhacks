@@ -65,6 +65,8 @@ contextBridge.exposeInMainWorld('enk', {
   getEntityGraph: (): Promise<any> => ipcRenderer.invoke('get-entity-graph'),
   getNodeDetail: (nodeId: string): Promise<any> => ipcRenderer.invoke('get-node-detail', nodeId),
   getEdgeDetail: (sourceId: string, targetId: string): Promise<any> => ipcRenderer.invoke('get-edge-detail', sourceId, targetId),
+  pruneGraphNoise: (): Promise<{ nodesRemoved: number; edgesRemoved: number }> => ipcRenderer.invoke('prune-graph-noise'),
+  resetGraph: (): Promise<void> => ipcRenderer.invoke('reset-graph'),
   previewGraphGroup: (nodeIds: string[]): Promise<{ preview?: string }> => ipcRenderer.invoke('preview-graph-group', nodeIds),
   getUnderstandingPreview: (): Promise<any> => ipcRenderer.invoke('get-understanding-preview'),
   analyzeGraphGroup: (nodeIds: string[]): Promise<any> => ipcRenderer.invoke('analyze-graph-group', nodeIds),

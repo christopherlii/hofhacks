@@ -127,7 +127,7 @@ export interface Settings {
 export interface EntityNode {
   id: string;
   label: string;
-  type: 'person' | 'topic' | 'app' | 'content' | 'place' | 'project';
+  type: 'person' | 'topic' | 'app' | 'content' | 'place' | 'project' | 'goal';
   weight: number;
   firstSeen: number;
   lastSeen: number;
@@ -139,4 +139,6 @@ export interface EntityEdge {
   source: string;
   target: string;
   weight: number;
+  /** Semantic relationship: working_on, planning, interested_in, related_to, etc. */
+  relation?: string;
 }
