@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'path';
 
 import type { NiaClient, NiaContext } from '../../nia-client';
+import type { OpenClawClient } from '../../openclaw-client';
 import { claudeTextRequest } from '../../shared/claude-http';
 import { logElephantEvent } from './logger';
 import { generateSuggestions, type Suggestion, type SuggestionAction, type Actor, type ActorResult } from './suggestions';
@@ -40,6 +41,7 @@ async function labelTask(apiKey: string, contextText: string): Promise<string | 
 interface ElephantInitOptions {
   apiKey: () => string;
   nia: NiaClient;
+  openClaw: OpenClawClient;
   getContext: () => NowContext;
   captureContext: () => Promise<NowContext>;
   actor?: Actor;
@@ -84,35 +86,21 @@ async function textActor(action: SuggestionAction, context: NowContext): Promise
   return { ok: true, type: 'text', message: 'Response generated.', text };
 }
 
-function askOpenClaw(prompt: string): Promise<string> {
-  const { execFile } = require('child_process') as typeof import('child_process');
-  return new Promise((resolve, reject) => {
-    execFile('openclaw', ['agent', '--message', prompt, '--json', '--timeout', '120'], {
-      encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024,
-    }, (err, stdout) => {
-      if (err) return reject(err);
-      try {
-        const parsed = JSON.parse(stdout);
-        resolve(parsed.response || parsed.content || stdout);
-      } catch {
-        resolve(stdout);
-      }
-    });
-  });
-}
-
 async function actionActor(action: SuggestionAction, context: NowContext): Promise<ActorResult> {
-  const prompt = [
-    `Action: ${action.type}`,
-    ...Object.entries(action.payload).map(([k, v]) => `${k}: ${v}`),
-    `App: ${context.activeApp || ''}`,
-    `Window: ${context.windowTitle || ''}`,
-    context.url ? `URL: ${context.url}` : '',
-  ].filter(Boolean).join('\n');
-
   try {
-    const response = await askOpenClaw(prompt);
+    const question = [
+      `Action: ${action.type}`,
+      ...Object.entries(action.payload).map(([k, v]) => `${k}: ${v}`),
+    ].filter(Boolean).join('\n');
+
+    const response = await openClawClient.analyzeActivity({
+      app: context.activeApp || '',
+      title: context.windowTitle || '',
+      url: context.url || undefined,
+      content: context.visibleText || undefined,
+      question,
+    });
+
     return { ok: true, type: 'action', message: response };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
@@ -131,6 +119,7 @@ const defaultActor: Actor = async (action, context) => {
 let elephantWindow: BrowserWindow | null = null;
 let getApiKey: () => string = () => '';
 let niaClient: NiaClient;
+let openClawClient: OpenClawClient;
 let getContext: () => NowContext;
 let captureContext: () => Promise<NowContext>;
 let actor: Actor = defaultActor;
@@ -143,6 +132,7 @@ function createCorrelationId(): string {
 function init(opts: ElephantInitOptions): void {
   getApiKey = opts.apiKey;
   niaClient = opts.nia;
+  openClawClient = opts.openClaw;
   getContext = opts.getContext;
   captureContext = opts.captureContext;
   actor = opts.actor ?? defaultActor;

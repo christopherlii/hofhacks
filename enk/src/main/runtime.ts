@@ -1,6 +1,7 @@
 import { app, globalShortcut, systemPreferences } from 'electron';
 
 import { NiaClient } from '../nia-client';
+import { OpenClawClient } from '../openclaw-client';
 import { LocalKnowledgeCache } from './knowledge/local-cache';
 import { pollActiveWindow as pollActiveWindowFromModule, type ActiveWindowState } from './monitoring/activity';
 import { LocalSignalsMonitor } from './monitoring/local-signals';
@@ -28,6 +29,7 @@ let store: any;
 
 const windows = new AppWindows();
 const nia = new NiaClient('');
+const openClaw = new OpenClawClient();
 const ocrEngine = new OcrEngine();
 const screenChangeTracker = new ScreenChangeTracker();
 
@@ -322,6 +324,7 @@ function startBootstrap(): void {
     elephant.init({
       apiKey: () => getStoreApiKey(store),
       nia,
+      openClaw,
       getContext: () => {
         const latest = contentSnapshots[contentSnapshots.length - 1];
         return {
