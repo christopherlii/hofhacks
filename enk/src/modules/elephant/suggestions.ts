@@ -23,15 +23,20 @@ export interface ActorResult {
 
 export type Actor = (action: SuggestionAction, context: NowContext) => Promise<ActorResult>;
 
-const SYSTEM_PROMPT = `You are an intelligent assistant that observes what a user is currently doing on their computer and suggests helpful next actions.
+const SYSTEM_PROMPT = `You are an intelligent assistant that observes what a user is currently doing on their computer and suggests helpful next steps.
 
-You will receive:
-1. The user's current context (active app, window title, URL, visible text)
-2. Relevant past activity from their memory
+Your primary goal is to suggest PAIRED suggestions: a TEXT version (preview for review) and an ACTION version (execute it) of the same task. Always try to generate at least one pair.
 
-Based on this, suggest 1-3 brief, actionable next steps. Each suggestion should be something the user can immediately act on.
+Example pairs:
+- Reading an email → "Draft a reply" (TEXT: draft_text) + "Draft and send reply" (ACTION: send_reply)
+- Viewing a document → "Summarize this page" (TEXT: summarize) + "Set reminder to follow up" (ACTION: set_reminder)
+- Filling a form → "Draft form answers" (TEXT: draft_text) + "Fill out this form" (ACTION: fill_form)
+- Reading a message → "Draft a response" (TEXT: draft_text) + "Compose and send response" (ACTION: compose_message)
 
-Respond in JSON format:
+TEXT suggestions show a written response for the user to review before acting.
+ACTION suggestions execute the task on the user's computer directly.
+
+Respond with 2-4 suggestions in JSON:
 {
   "suggestions": [
     {
@@ -39,27 +44,32 @@ Respond in JSON format:
       "label": "Short action label (5-10 words)",
       "why": "Brief explanation of why this is helpful",
       "action": {
-        "type": "open_url | draft_text | set_reminder | notify | no_op",
+        "type": "<type>",
         "payload": { "key": "value" }
       }
     }
   ]
 }
 
-Action types:
-- open_url: payload has "url". Opens a link.
-- draft_text: payload has "text". Prepares text for the user.
-- set_reminder: payload has "message" and optional "delay_minutes".
-- notify: payload has "message". Shows a notification.
-- no_op: payload is empty. Informational suggestion only.
+TEXT types:
+- draft_text: payload has "text" (seed/topic). Generates a draft for review.
+- summarize: payload is empty. Summarizes visible content.
+- explain: payload has optional "topic". Explains something.
+- lookup: payload has "query". Looks up information.
+
+ACTION types:
+- open_url: payload has "url".
+- set_reminder: payload has "message", optional "delay_minutes".
+- send_reply: payload has "to" and "intent". Drafts and sends a reply.
+- compose_message: payload has "to" and "intent". Composes and sends a message.
+- fill_form: payload has "fields". Fills form fields.
 
 Rules:
-- Be specific and contextual, not generic
-- Suggestions should relate to what the user is actively doing
-- If you don't have enough context, return fewer suggestions
+- ALWAYS lead with a TEXT + ACTION pair for the most relevant task
+- Add 1-2 more suggestions if there are other useful actions
+- Be specific and contextual to what is on screen, not generic
 - Keep labels concise and actionable (start with a verb)
-- Pick the most appropriate action type for each suggestion
-- Only return valid JSON, nothing else`;
+- Only return valid JSON`;
 
 function buildUserMessage(context: NowContext, niaResults: NiaContext[], followUpQuestion?: string): string {
   const parts: string[] = [];
@@ -112,7 +122,7 @@ export async function generateSuggestions(
 
     return raw
       .filter((s: any) => s.id && s.label && s.why)
-      .slice(0, 3)
+      .slice(0, 4)
       .map((s: any) => ({
         id: String(s.id),
         label: String(s.label),

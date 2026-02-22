@@ -7,7 +7,7 @@ import { logElephantEvent } from './logger';
 import { generateSuggestions, type Suggestion, type SuggestionAction, type Actor, type ActorResult } from './suggestions';
 import type { NowContext } from '../../types';
 
-const ACTION_TYPES = new Set(['open_url', 'set_reminder']);
+const ACTION_TYPES = new Set(['open_url', 'set_reminder', 'send_reply', 'compose_message', 'fill_form']);
 
 const TEXT_ACTOR_PROMPT = `You are a helpful assistant embedded in a desktop productivity tool. The user clicked a suggestion and you need to generate a useful text response.
 
@@ -41,6 +41,7 @@ interface ElephantInitOptions {
   apiKey: () => string;
   nia: NiaClient;
   getContext: () => NowContext;
+  captureContext: () => Promise<NowContext>;
   actor?: Actor;
 }
 
@@ -83,9 +84,41 @@ async function textActor(action: SuggestionAction, context: NowContext): Promise
   return { ok: true, type: 'text', message: 'Response generated.', text };
 }
 
-async function actionActor(_action: SuggestionAction, _context: NowContext): Promise<ActorResult> {
-  // Openclaw will handle action-oriented suggestions — stubbed for now
-  return { ok: true, type: 'action', message: 'Action support coming soon.' };
+function askOpenClaw(prompt: string): Promise<string> {
+  const { execFile } = require('child_process') as typeof import('child_process');
+  return new Promise((resolve, reject) => {
+    execFile('openclaw', ['agent', '--message', prompt, '--json', '--timeout', '120'], {
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    }, (err, stdout) => {
+      if (err) return reject(err);
+      try {
+        const parsed = JSON.parse(stdout);
+        resolve(parsed.response || parsed.content || stdout);
+      } catch {
+        resolve(stdout);
+      }
+    });
+  });
+}
+
+async function actionActor(action: SuggestionAction, context: NowContext): Promise<ActorResult> {
+  const prompt = [
+    `Action: ${action.type}`,
+    ...Object.entries(action.payload).map(([k, v]) => `${k}: ${v}`),
+    `App: ${context.activeApp || ''}`,
+    `Window: ${context.windowTitle || ''}`,
+    context.url ? `URL: ${context.url}` : '',
+  ].filter(Boolean).join('\n');
+
+  try {
+    const response = await askOpenClaw(prompt);
+    return { ok: true, type: 'action', message: response };
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('[Enk] OpenClaw failed:', errMsg);
+    return { ok: false, type: 'action', message: errMsg };
+  }
 }
 
 const defaultActor: Actor = async (action, context) => {
@@ -99,6 +132,7 @@ let elephantWindow: BrowserWindow | null = null;
 let getApiKey: () => string = () => '';
 let niaClient: NiaClient;
 let getContext: () => NowContext;
+let captureContext: () => Promise<NowContext>;
 let actor: Actor = defaultActor;
 let activeSession: ActiveSession | null = null;
 
@@ -110,6 +144,7 @@ function init(opts: ElephantInitOptions): void {
   getApiKey = opts.apiKey;
   niaClient = opts.nia;
   getContext = opts.getContext;
+  captureContext = opts.captureContext;
   actor = opts.actor ?? defaultActor;
 }
 
@@ -241,8 +276,11 @@ async function triggerAnalysis(followUpQuestion?: string): Promise<void> {
 
   try {
     const apiKey = getApiKey();
-    const context = getContext();
+    const context = await captureContext();
     const correlationId = createCorrelationId();
+
+    // Flush fresh context to NIA in background
+    void writeToNia(context, correlationId);
 
     let niaResults: NiaContext[] = [];
     try {
@@ -311,7 +349,7 @@ async function showElephant(): Promise<void> {
   // Keep the current app focused while capturing context so suggestions reflect
   // what the user is actually looking at (e.g., current Gmail thread).
   elephantWindow!.showInactive();
-  void writeToNia(getContext(), createCorrelationId());
+  // triggerAnalysis does its own fresh capture via captureContext
   void triggerAnalysis();
 }
 
@@ -358,12 +396,12 @@ function setupIPC(): void {
 
   ipcMain.handle('elephant-run-suggestion', async (_event, suggestionId: string) => {
     if (!activeSession) {
-      return { ok: false, message: 'No active session.' };
+      return { ok: false, type: 'text', message: 'No active session.' };
     }
 
     const suggestion = activeSession.suggestions.find((s) => s.id === suggestionId);
     if (!suggestion) {
-      return { ok: false, message: 'Suggestion no longer available.' };
+      return { ok: false, type: 'text', message: 'Suggestion no longer available.' };
     }
 
     logElephantEvent('suggestion_accepted', activeSession.correlationId, {

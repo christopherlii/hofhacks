@@ -4,7 +4,7 @@ import { NiaClient } from '../nia-client';
 import { LocalKnowledgeCache } from './knowledge/local-cache';
 import { pollActiveWindow as pollActiveWindowFromModule, type ActiveWindowState } from './monitoring/activity';
 import { LocalSignalsMonitor } from './monitoring/local-signals';
-import { OcrEngine, ScreenChangeTracker } from './monitoring/screen-pipeline';
+import { captureAllScreens, OcrEngine, ScreenChangeTracker } from './monitoring/screen-pipeline';
 import {
   getApiKey as getStoreApiKey,
   getSettingsPayload as buildSettingsPayload,
@@ -306,7 +306,6 @@ function startBootstrap(): void {
       nia,
       getContext: () => {
         const latest = contentSnapshots[contentSnapshots.length - 1];
-        console.log('LATEST', latest)
         return {
           activeApp: latest?.app ?? currentWindow.app ?? null,
           windowTitle: latest?.title ?? currentWindow.title ?? null,
@@ -314,6 +313,31 @@ function startBootstrap(): void {
           visibleText: latest?.fullText ?? latest?.text ?? null,
           ocrConfidence: latest ? 80 : 0,
           timestamp: latest?.timestamp ?? Date.now(),
+        };
+      },
+      captureContext: async () => {
+        const screens = await captureAllScreens();
+        let visibleText: string | null = null;
+        let ocrConfidence = 0;
+
+        if (screens.length > 0) {
+          try {
+            const pngBuffer = screens[0].nativeImage.toPNG();
+            const ocrResult = await ocrEngine.run(pngBuffer);
+            visibleText = ocrResult.text;
+            ocrConfidence = ocrResult.confidence;
+          } catch (err) {
+            console.error('[Enk] Elephant live OCR failed:', (err as Error).message);
+          }
+        }
+
+        return {
+          activeApp: currentWindow.app || null,
+          windowTitle: currentWindow.title || null,
+          url: currentWindow.url || null,
+          visibleText,
+          ocrConfidence,
+          timestamp: Date.now(),
         };
       },
     });
