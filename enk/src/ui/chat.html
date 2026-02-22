@@ -550,6 +550,113 @@
       padding: 2px 8px; border-radius: 6px; background: rgba(59,130,246,0.15);
       border: 1px solid rgba(59,130,246,0.3); margin: 2px; color: var(--accent);
     }
+
+    /* ─── Enhanced Entity Filter Panel ─── */
+    .entity-filter-panel {
+      max-height: 180px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 8px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: none;
+    }
+    .entity-filter-panel.visible { display: block; }
+    .entity-filter-panel::-webkit-scrollbar { width: 4px; }
+    .entity-filter-panel::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 2px; }
+    
+    .entity-filter-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .entity-filter-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+    .entity-filter-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .entity-filter-btn {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .entity-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    
+    .entity-filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .entity-filter-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.1s;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .entity-filter-item:hover { background: var(--bg-secondary); }
+    .entity-filter-item.selected { 
+      background: rgba(59,130,246,0.15); 
+      color: var(--text-primary);
+    }
+    .entity-filter-item input[type="checkbox"] {
+      width: 12px;
+      height: 12px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .entity-filter-item .entity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .entity-filter-item .entity-weight {
+      margin-left: auto;
+      font-size: 9px;
+      color: var(--text-muted);
+      padding: 1px 4px;
+      background: var(--bg-tertiary);
+      border-radius: 3px;
+    }
+    
+    /* Type chip with expand arrow */
+    .graph-chip-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .graph-chip-expand {
+      margin-left: 2px;
+      font-size: 8px;
+      opacity: 0.6;
+      transition: transform 0.15s;
+    }
+    .graph-chip-wrapper.expanded .graph-chip-expand { transform: rotate(180deg); }
+    
+    /* Importance indicator (visual hierarchy) */
+    .importance-high { font-weight: 600; }
+    .importance-medium { font-weight: 500; }
+    .importance-low { font-weight: 400; opacity: 0.7; }
   </style>
 </head>
 <body>
@@ -747,14 +854,37 @@
           <div style="padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
             <input type="text" id="graphSearch" placeholder="Search entities..." style="width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text-primary);font-size:12px;outline:none;margin-bottom:8px;">
             <div id="typeFilters" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-              <button class="graph-chip active" data-type="person" style="--chip-color:#3b82f6;">Person</button>
-              <button class="graph-chip active" data-type="topic" style="--chip-color:#4ade80;">Topic</button>
-              <button class="graph-chip active" data-type="content" style="--chip-color:#f97316;">Content</button>
-              <button class="graph-chip active" data-type="project" style="--chip-color:#a78bfa;">Project</button>
-              <button class="graph-chip active" data-type="place" style="--chip-color:#ef4444;">Place</button>
-              <button class="graph-chip active" data-type="goal" style="--chip-color:#f59e0b;">Goal</button>
+              <div class="graph-chip-wrapper" data-type="person">
+                <button class="graph-chip active" data-type="person" style="--chip-color:#3b82f6;">Person <span class="graph-chip-expand">▼</span></button>
+              </div>
+              <div class="graph-chip-wrapper" data-type="topic">
+                <button class="graph-chip active" data-type="topic" style="--chip-color:#4ade80;">Topic <span class="graph-chip-expand">▼</span></button>
+              </div>
+              <div class="graph-chip-wrapper" data-type="content">
+                <button class="graph-chip active" data-type="content" style="--chip-color:#f97316;">Content <span class="graph-chip-expand">▼</span></button>
+              </div>
+              <div class="graph-chip-wrapper" data-type="project">
+                <button class="graph-chip active" data-type="project" style="--chip-color:#a78bfa;">Project <span class="graph-chip-expand">▼</span></button>
+              </div>
+              <div class="graph-chip-wrapper" data-type="place">
+                <button class="graph-chip active" data-type="place" style="--chip-color:#ef4444;">Place <span class="graph-chip-expand">▼</span></button>
+              </div>
+              <div class="graph-chip-wrapper" data-type="goal">
+                <button class="graph-chip active" data-type="goal" style="--chip-color:#f59e0b;">Goal <span class="graph-chip-expand">▼</span></button>
+              </div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <!-- Entity sub-filter panel (shown when type chip is clicked) -->
+            <div id="entityFilterPanel" class="entity-filter-panel">
+              <div class="entity-filter-header">
+                <span class="entity-filter-title" id="entityFilterTitle">Filter Entities</span>
+                <div class="entity-filter-actions">
+                  <button class="entity-filter-btn" id="entitySelectAll">All</button>
+                  <button class="entity-filter-btn" id="entitySelectNone">None</button>
+                </div>
+              </div>
+              <div class="entity-filter-list" id="entityFilterList"></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
               <div id="timeFilter" style="display:flex;gap:3px;">
                 <button class="graph-time-btn active" data-mins="0">All</button>
                 <button class="graph-time-btn" data-mins="5">5m</button>
@@ -1247,13 +1377,26 @@
     }
 
     function shouldShowNode(n) {
+      // Type filter
       if (!activeTypeFilters.has(n._type)) return false;
+      
+      // Entity-level filter (if specific entities selected for this type)
+      const entitySet = activeEntityFilters.get(n._type);
+      if (entitySet && entitySet.size > 0 && !entitySet.has(n.id)) return false;
+      if (entitySet && entitySet.size === 0) return false; // Empty set = show none
+      
+      // Time filter
       if (activeTimeFilter > 0) {
         const cutoff = Date.now() - activeTimeFilter * 60 * 1000;
         if (n._lastSeen < cutoff) return false;
       }
+      
+      // Search filter
       if (searchQuery && !n.label.toLowerCase().includes(searchQuery)) return false;
+      
+      // Verified filter
       if (verifiedOnly && !n._verified) return false;
+      
       return true;
     }
 
@@ -1498,29 +1641,48 @@
 
         graphNodesDS = new vis.DataSet(data.nodes.map(n => {
           const baseColor = TYPE_COLORS[n.type] || '#64748b';
-          const opacity = n.verified ? 1 : 0.55;
-          const bg = n.verified ? baseColor : baseColor + '88';
+          const weight = n.mentions || n.weight || 1;
+          const diversity = n.contextDiversity || 1;
+          const recency = n.lastSeen ? Math.max(0, 1 - (Date.now() - n.lastSeen) / (7 * 24 * 60 * 60 * 1000)) : 0.5;
+          
+          // Calculate importance score for visual sizing
+          const importance = Math.log2(weight + 1) * (1 + diversity * 0.2) * (0.5 + recency * 0.5);
+          const nodeSize = Math.min(Math.max(importance * 8, 12), 40);
+          const fontSize = Math.min(Math.max(10 + importance * 1.5, 10), 16);
+          
+          const isVerified = n.verified || false;
+          const bg = isVerified ? baseColor : baseColor + '99';
+          const fontColor = isVerified ? '#f1f5f9' : '#94a3b8';
+          
           return {
-          id: n.id,
-          label: n.verified ? n.label : n.label,
-          value: n.mentions || n.weight,
-          color: {
-            background: bg,
-            border: baseColor,
-            highlight: { background: '#fff', border: baseColor },
-          },
-          font: { color: n.verified ? '#f1f5f9' : '#94a3b8', size: Math.min(10 + (n.mentions || n.weight) * 1.5, 18) },
-          _type: n.type,
-          _mentions: n.mentions || n.weight,
-          _firstSeen: n.firstSeen,
-          _lastSeen: n.lastSeen,
-          _sourceLabel: n.label,
-          _verified: n.verified || false,
-          _contextDiversity: n.contextDiversity || 1,
-          borderWidth: n.verified ? 2 : 1,
-          borderDashes: n.verified ? false : [4, 4],
-          hidden: false,
-        }}));
+            id: n.id,
+            label: n.label,
+            value: nodeSize,
+            color: {
+              background: bg,
+              border: baseColor,
+              highlight: { background: '#fff', border: baseColor },
+              hover: { background: baseColor, border: '#fff' },
+            },
+            font: { 
+              color: fontColor, 
+              size: fontSize,
+              strokeWidth: isVerified ? 0 : 0,
+            },
+            _type: n.type,
+            _mentions: weight,
+            _importance: importance,
+            _firstSeen: n.firstSeen,
+            _lastSeen: n.lastSeen,
+            _sourceLabel: n.label,
+            _verified: isVerified,
+            _contextDiversity: diversity,
+            borderWidth: isVerified ? 3 : 1,
+            borderDashes: isVerified ? false : [3, 3],
+            shadow: isVerified ? { enabled: true, size: 8, color: baseColor + '40' } : false,
+            hidden: false,
+          };
+        }));
 
         graphEdgesDS = new vis.DataSet(data.edges.map((e, i) => ({
           id: `e${i}`,
@@ -1544,38 +1706,54 @@
         graphNetwork = new vis.Network(container, { nodes: graphNodesDS, edges: graphEdgesDS }, {
           physics: {
             enabled: true,
-            solver: 'barnesHut',
-            barnesHut: {
-              gravitationalConstant: -2000,
-              centralGravity: 0.03,
-              springLength: 120,
-              springConstant: 0.04,
-              damping: 0.08,
-              avoidOverlap: 0.2,
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: {
+              gravitationalConstant: -80,
+              centralGravity: 0.01,
+              springLength: 100,
+              springConstant: 0.08,
+              damping: 0.4,
+              avoidOverlap: 0.5,
             },
-            stabilization: { enabled: true, iterations: 150, updateInterval: 25 },
-            minVelocity: 0.5,
-            maxVelocity: 15,
+            stabilization: { enabled: true, iterations: 200, updateInterval: 25 },
+            minVelocity: 0.75,
+            maxVelocity: 30,
           },
           interaction: {
             hover: true,
             tooltipDelay: 0,
-            multiselect: false,
+            multiselect: true,
             selectConnectedEdges: false,
-            zoomSpeed: 0.45,
+            zoomSpeed: 0.4,
             zoomView: true,
             dragView: true,
             dragNodes: true,
+            navigationButtons: false,
+            keyboard: { enabled: true, bindToWindow: false },
           },
           nodes: {
             shape: 'dot',
-            scaling: { min: 16, max: 36, label: { enabled: true, min: 12, max: 18 } },
+            scaling: { 
+              min: 12, 
+              max: 45, 
+              label: { enabled: true, min: 10, max: 16, drawThreshold: 8 } 
+            },
             borderWidth: 2,
             shadow: false,
+            font: { face: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' },
           },
           edges: {
-            scaling: { min: 1, max: 4 },
+            scaling: { min: 1, max: 5 },
             selectionWidth: 2,
+            smooth: {
+              enabled: true,
+              type: 'continuous',
+              roundness: 0.5,
+            },
+          },
+          layout: {
+            improvedLayout: true,
+            clusterThreshold: 150,
           },
         });
 
@@ -1695,13 +1873,123 @@
     }
 
     // ── Filter wiring ──
-    document.querySelectorAll('.graph-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const type = chip.dataset.type;
-        chip.classList.toggle('active');
-        if (activeTypeFilters.has(type)) activeTypeFilters.delete(type);
-        else activeTypeFilters.add(type);
-        applyFilters();
+    let activeEntityFilters = new Map(); // type -> Set of entity IDs to show (empty = show all)
+    let expandedFilterType = null;
+    
+    function populateEntityFilterPanel(type) {
+      const panel = document.getElementById('entityFilterPanel');
+      const list = document.getElementById('entityFilterList');
+      const title = document.getElementById('entityFilterTitle');
+      
+      if (!graphRawData || !graphRawData.nodes) return;
+      
+      const typeColor = TYPE_COLORS[type] || '#64748b';
+      title.textContent = `Filter ${type}s`;
+      title.style.color = typeColor;
+      
+      // Get all entities of this type, sorted by weight
+      const entities = graphRawData.nodes
+        .filter(n => n.type === type)
+        .sort((a, b) => (b.mentions || b.weight || 0) - (a.mentions || a.weight || 0));
+      
+      if (entities.length === 0) {
+        list.innerHTML = '<div style="font-size:11px;color:var(--text-muted);padding:8px;">No entities of this type</div>';
+        return;
+      }
+      
+      const selectedIds = activeEntityFilters.get(type) || new Set();
+      const showAll = selectedIds.size === 0;
+      
+      list.innerHTML = entities.map(e => {
+        const isSelected = showAll || selectedIds.has(e.id);
+        const weight = e.mentions || e.weight || 1;
+        const importanceClass = weight >= 5 ? 'importance-high' : weight >= 2 ? 'importance-medium' : 'importance-low';
+        return `
+          <label class="entity-filter-item ${isSelected ? 'selected' : ''}" data-id="${e.id}">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} data-entity-id="${e.id}">
+            <span class="entity-dot" style="background:${typeColor}"></span>
+            <span class="${importanceClass}">${e.label}</span>
+            <span class="entity-weight">${weight}x</span>
+          </label>
+        `;
+      }).join('');
+      
+      // Wire up checkboxes
+      list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const entityId = cb.dataset.entityId;
+          let typeSet = activeEntityFilters.get(type);
+          
+          if (cb.checked) {
+            // If we were showing all, initialize with all IDs first
+            if (!typeSet || typeSet.size === 0) {
+              typeSet = new Set(entities.map(e => e.id));
+              activeEntityFilters.set(type, typeSet);
+            }
+            typeSet.add(entityId);
+          } else {
+            if (!typeSet) {
+              // First uncheck - create set with all EXCEPT this one
+              typeSet = new Set(entities.filter(e => e.id !== entityId).map(e => e.id));
+              activeEntityFilters.set(type, typeSet);
+            } else {
+              typeSet.delete(entityId);
+            }
+          }
+          
+          // Update visual
+          cb.closest('.entity-filter-item').classList.toggle('selected', cb.checked);
+          applyFilters();
+        });
+      });
+    }
+    
+    // Select All / None buttons
+    document.getElementById('entitySelectAll').addEventListener('click', () => {
+      if (!expandedFilterType) return;
+      activeEntityFilters.delete(expandedFilterType); // Empty = show all
+      populateEntityFilterPanel(expandedFilterType);
+      applyFilters();
+    });
+    
+    document.getElementById('entitySelectNone').addEventListener('click', () => {
+      if (!expandedFilterType) return;
+      activeEntityFilters.set(expandedFilterType, new Set()); // Empty set = show none
+      populateEntityFilterPanel(expandedFilterType);
+      applyFilters();
+    });
+    
+    document.querySelectorAll('.graph-chip-wrapper').forEach(wrapper => {
+      const chip = wrapper.querySelector('.graph-chip');
+      const type = chip.dataset.type;
+      
+      chip.addEventListener('click', (e) => {
+        const panel = document.getElementById('entityFilterPanel');
+        
+        // If shift-click, toggle the entire type
+        if (e.shiftKey) {
+          chip.classList.toggle('active');
+          if (activeTypeFilters.has(type)) activeTypeFilters.delete(type);
+          else activeTypeFilters.add(type);
+          applyFilters();
+          return;
+        }
+        
+        // Regular click - expand/collapse filter panel
+        const wasExpanded = wrapper.classList.contains('expanded');
+        
+        // Collapse all
+        document.querySelectorAll('.graph-chip-wrapper').forEach(w => w.classList.remove('expanded'));
+        
+        if (wasExpanded) {
+          panel.classList.remove('visible');
+          expandedFilterType = null;
+        } else {
+          wrapper.classList.add('expanded');
+          panel.classList.add('visible');
+          expandedFilterType = type;
+          populateEntityFilterPanel(type);
+        }
       });
     });
 

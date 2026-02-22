@@ -45,7 +45,7 @@ function normalizeEntity(raw: string): string {
 
 /** 
  * Find canonical node for deduplication. 
- * Now checks ACROSS types for place/topic/project ambiguity.
+ * Aggressively merges across types and handles common variations.
  */
 function findCanonicalNode(
   nodes: Map<string, EntityNode>,
@@ -55,23 +55,35 @@ function findCanonicalNode(
   const n = normalizeEntity(label);
   if (n.length < 2) return null;
   
-  // Types that can be deduplicated together
+  // Normalize underscores to spaces for comparison
+  const nSpaced = n.replace(/_/g, ' ');
+  
+  // Types that can be deduplicated together (everything except person and app)
   const typesToCheck: EntityNode['type'][] = 
     type === 'person' ? ['person'] : 
     type === 'app' ? ['app'] :
-    // Allow place, topic, and project to dedupe against each other
-    ['place', 'topic', 'project'];
+    // Allow place, topic, project, content, goal to dedupe against each other
+    ['place', 'topic', 'project', 'content', 'goal'];
   
-  let best: { id: string; len: number; weight: number } | null = null;
+  let best: { id: string; len: number; weight: number; exactTypeMatch: boolean } | null = null;
   
   for (const node of nodes.values()) {
     if (!typesToCheck.includes(node.type)) continue;
     const nodeNorm = normalizeEntity(node.label);
+    const nodeSpaced = nodeNorm.replace(/_/g, ' ');
     
-    // Exact match - always prefer
-    if (nodeNorm === n) return node.id;
+    // Exact match (with underscore normalization) - always prefer
+    if (nodeNorm === n || nodeSpaced === nSpaced || nodeNorm === nSpaced || nodeSpaced === n) {
+      // If exact match, prefer same type, then higher weight
+      const exactTypeMatch = node.type === type;
+      const score = (exactTypeMatch ? 1000 : 0) + node.weight;
+      if (!best || score > (best.exactTypeMatch ? 1000 : 0) + best.weight) {
+        best = { id: node.id, len: nodeNorm.length, weight: node.weight, exactTypeMatch };
+      }
+      continue;
+    }
     
-    const [shorter, longer] = n.length <= nodeNorm.length ? [n, nodeNorm] : [nodeNorm, n];
+    const [shorter, longer] = nSpaced.length <= nodeSpaced.length ? [nSpaced, nodeSpaced] : [nodeSpaced, nSpaced];
     const isMatch =
       longer.startsWith(shorter) ||
       longer.includes(` ${shorter}`) ||
@@ -80,10 +92,11 @@ function findCanonicalNode(
     
     if (isMatch) {
       const len = nodeNorm.length;
-      // Prefer longer labels and higher weights
-      const score = len * 10 + node.weight;
-      if (!best || score > best.len * 10 + best.weight) {
-        best = { id: node.id, len, weight: node.weight };
+      const exactTypeMatch = node.type === type;
+      // Prefer: same type > longer labels > higher weights
+      const score = (exactTypeMatch ? 1000 : 0) + len * 10 + node.weight;
+      if (!best || score > (best.exactTypeMatch ? 1000 : 0) + best.len * 10 + best.weight) {
+        best = { id: node.id, len, weight: node.weight, exactTypeMatch };
       }
     }
   }
