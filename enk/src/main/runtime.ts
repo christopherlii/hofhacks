@@ -327,6 +327,8 @@ function startBootstrap(): void {
       apiKey: () => getStoreApiKey(store),
       nia,
       openClaw,
+      getUserModel: () => graphApi.getUserModel(),
+      getCurrentGraphContext: () => graphApi.getCurrentContext(),
       getContext: () => {
         const latest = contentSnapshots[contentSnapshots.length - 1];
         return {

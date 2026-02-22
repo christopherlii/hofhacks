@@ -6,7 +6,7 @@ import type { OpenClawClient } from '../../openclaw-client';
 import { claudeTextRequest } from '../../shared/claude-http';
 import { logElephantEvent } from './logger';
 import { generateSuggestions, type Suggestion, type SuggestionAction, type Actor, type ActorResult } from './suggestions';
-import type { NowContext } from '../../types';
+import type { NowContext, UserModel, CurrentContext } from '../../types';
 
 const ACTION_TYPES = new Set(['open_url', 'set_reminder', 'send_reply', 'compose_message', 'fill_form']);
 
@@ -44,6 +44,8 @@ interface ElephantInitOptions {
   openClaw: OpenClawClient;
   getContext: () => NowContext;
   captureContext: () => Promise<NowContext>;
+  getUserModel: () => UserModel;
+  getCurrentGraphContext: () => CurrentContext;
   actor?: Actor;
 }
 
@@ -86,36 +88,74 @@ async function textActor(action: SuggestionAction, context: NowContext): Promise
   return { ok: true, type: 'text', message: 'Response generated.', text };
 }
 
+function buildGraphContext(): string {
+  const parts: string[] = [];
+
+  try {
+    const graphCtx = getCurrentGraphContext();
+    parts.push(`## Current Activity`);
+    parts.push(`Task: ${graphCtx.task}`);
+    parts.push(`Intent: ${graphCtx.intent}`);
+    if (graphCtx.activeProject) parts.push(`Project: ${graphCtx.activeProject.name}`);
+    if (graphCtx.activePeople.length > 0) {
+      parts.push(`People involved: ${graphCtx.activePeople.map(p => p.name).join(', ')}`);
+    }
+  } catch { /* graph may not be initialized */ }
+
+  try {
+    const model = getUserModel();
+    if (model.activeProjects.length > 0) {
+      parts.push(`\n## Active Projects`);
+      for (const p of model.activeProjects.slice(0, 5)) {
+        const people = p.relatedPeople.length > 0 ? ` (with ${p.relatedPeople.join(', ')})` : '';
+        parts.push(`- ${p.name}${people}`);
+      }
+    }
+    if (model.topPeople.length > 0) {
+      parts.push(`\n## Key People`);
+      for (const p of model.topPeople.slice(0, 8)) {
+        const channels = p.communicationChannels.length > 0 ? ` [${p.communicationChannels.join(', ')}]` : '';
+        parts.push(`- ${p.name} (${p.relationship})${channels}`);
+      }
+    }
+  } catch { /* graph may not be initialized */ }
+
+  return parts.join('\n');
+}
+
 async function actionActor(action: SuggestionAction, context: NowContext): Promise<ActorResult> {
   const apiKey = getApiKey();
   if (!apiKey) return { ok: false, type: 'text', message: 'No API key configured.' };
 
   try {
-    if (action.type === 'send_reply' || action.type === 'compose_message') {
-      // Step 1: Local Claude generates the content
-      console.log('[Enk] Drafting email...', action.payload.to, context.visibleText?.slice(0, 1000));
-      const draft = await claudeTextRequest(apiKey, {
-        model: 'claude-haiku-4-5',
-        max_tokens: 500,
-        system: TEXT_ACTOR_PROMPT,
-        messages: [{
-          role: 'user',
-          content: `Draft a reply for this.\nTo: ${action.payload.to}\nContext: ${context.visibleText?.slice(0, 1000)}`
-        }]
-      });
-      
-      const emailText = draft;
-      console.log('[Enk] Email text:', emailText);
-      
-      // Step 2: OpenClaw sends it
-      const response = await openClawClient.ask(
-        'Read the email thread visible in Gmail and draft an appropriate reply. Use browser controls to put the draft into the reply field but do not click send.'
-      );
+    const graphContext = buildGraphContext();
 
+    if (action.type === 'send_reply' || action.type === 'compose_message') {
+      const prompt = [
+        'Read the email thread visible in Gmail and draft an appropriate reply.',
+        'Use browser controls to put the draft into the reply field but do not click send.',
+        '',
+        '## Context about the user',
+        graphContext,
+        '',
+        `To: ${action.payload.to || 'the recipient'}`,
+        action.payload.intent ? `Intent: ${action.payload.intent}` : '',
+      ].filter(Boolean).join('\n');
+
+      const response = await openClawClient.ask(prompt);
       return { ok: true, type: 'action', message: response };
     }
 
-    return { ok: false, type: 'action', message: 'Invalid action type.' };
+    const prompt = [
+      `Action: ${action.type}`,
+      ...Object.entries(action.payload).map(([k, v]) => `${k}: ${v}`),
+      '',
+      '## Context about the user',
+      graphContext,
+    ].join('\n');
+
+    const response = await openClawClient.ask(prompt);
+    return { ok: true, type: 'action', message: response };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error('[Enk] OpenClaw failed:', errMsg);
@@ -136,6 +176,8 @@ let niaClient: NiaClient;
 let openClawClient: OpenClawClient;
 let getContext: () => NowContext;
 let captureContext: () => Promise<NowContext>;
+let getUserModel: () => UserModel;
+let getCurrentGraphContext: () => CurrentContext;
 let actor: Actor = defaultActor;
 let activeSession: ActiveSession | null = null;
 
@@ -149,6 +191,8 @@ function init(opts: ElephantInitOptions): void {
   openClawClient = opts.openClaw;
   getContext = opts.getContext;
   captureContext = opts.captureContext;
+  getUserModel = opts.getUserModel;
+  getCurrentGraphContext = opts.getCurrentGraphContext;
   actor = opts.actor ?? defaultActor;
 }
 
