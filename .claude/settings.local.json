@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-developer-platform)",
+      "Bash(mkdir -p enk/src && cd enk && npm init -y)",
+      "Bash(npm install electron@latest @anthropic-ai/sdk tesseract.js jimp electron-store --save)",
+      "Bash(node -e \"try { require\\('./src/main.js'\\) } catch\\(e\\) { console.log\\(e.message\\) }\" 2>&1 | head -5)",
+      "Bash(timeout 8 npx electron . 2>&1 || true)",
+      "Bash(ls -la /Users/benjaminxu/hofhacks/enk/src/main/state/ 2>/dev/null; echo \"EXIT:$?\")"
+    ]
+  }
+}

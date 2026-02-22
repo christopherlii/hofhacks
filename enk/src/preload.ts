@@ -6,6 +6,9 @@ export interface EnkSettings {
   enabled: boolean;
   scamDetection: boolean;
   firstLaunch: boolean;
+  apiKey?: string;
+  guardianEnabled?: boolean;
+  elephantEnabled?: boolean;
 }
 
 export interface ChatResult {
@@ -32,10 +35,17 @@ export interface ExportResult {
   error?: string;
 }
 
+export interface SettingsPayload extends Partial<EnkSettings> {
+  apiKey?: string;
+  guardianEnabled?: boolean;
+  elephantEnabled?: boolean;
+}
+
 contextBridge.exposeInMainWorld('enk', {
   // Settings
   getSettings: (): Promise<EnkSettings> => ipcRenderer.invoke('get-settings'),
-  saveSettings: (settings: Partial<EnkSettings>): Promise<boolean> => ipcRenderer.invoke('save-settings', settings),
+  saveSettings: (settings: SettingsPayload): Promise<boolean> => ipcRenderer.invoke('save-settings', settings),
+  getApiKey: (): Promise<string> => ipcRenderer.invoke('get-api-key'),
   openSettings: (): void => ipcRenderer.send('open-settings'),
 
   // Chat
@@ -70,7 +80,30 @@ contextBridge.exposeInMainWorld('enk', {
   onHideAlert: (callback: () => void): void => {
     ipcRenderer.on('hide-alert', () => callback());
   },
+  updateStatus: (status: string): void => ipcRenderer.send('update-status', status),
+  showAlert: (data: unknown): void => ipcRenderer.send('show-alert', data),
+  dismissAlert: (): void => ipcRenderer.send('dismiss-alert'),
   resizeOverlay: (height: number): void => ipcRenderer.send('resize-overlay', height),
   overlayMouseEnter: (): void => ipcRenderer.send('overlay-mouse-enter'),
   overlayMouseLeave: (): void => ipcRenderer.send('overlay-mouse-leave'),
+
+  // Elephant overlay IPC (used by the modular/stashed UI flow)
+  elephantDismiss: (): void => ipcRenderer.send('elephant-dismiss'),
+  elephantFollowUp: (question: string): void => ipcRenderer.send('elephant-follow-up', question),
+  elephantFocusInput: (): void => ipcRenderer.send('elephant-focus-input'),
+  elephantBlurInput: (): void => ipcRenderer.send('elephant-blur-input'),
+  elephantFeedback: (itemId: string, isPositive: boolean): void =>
+    ipcRenderer.send('elephant-feedback', { itemId, isPositive }),
+  elephantClearMemory: (): Promise<boolean> => ipcRenderer.invoke('elephant-clear-memory'),
+  elephantRunSuggestion: (suggestionId: string): Promise<any> =>
+    ipcRenderer.invoke('elephant-run-suggestion', suggestionId),
+  onElephantResponse: (callback: (data: unknown) => void): void => {
+    ipcRenderer.on('elephant-response', (_event, data: unknown) => callback(data));
+  },
+  onElephantError: (callback: (message: string) => void): void => {
+    ipcRenderer.on('elephant-error', (_event, message: string) => callback(message));
+  },
+  onElephantLoading: (callback: () => void): void => {
+    ipcRenderer.on('elephant-loading', () => callback());
+  },
 });

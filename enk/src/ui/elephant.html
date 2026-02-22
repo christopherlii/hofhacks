@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    :root {
+      --bg-app: rgba(242, 242, 247, 0.46);
+      --bg-panel: rgba(255, 255, 255, 0.44);
+      --bg-row: rgba(255, 255, 255, 0.5);
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --line: rgba(60, 60, 67, 0.16);
+      --blue: #0a84ff;
+      --blue-weak: rgba(10, 132, 255, 0.14);
+      --green: #2fb344;
+      --amber: #d38c00;
+      --red: #d64545;
+      --shadow: 0 22px 60px rgba(9, 20, 46, 0.26);
+      --radius-xl: 16px;
+      --radius-lg: 12px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --focus-ring: 0 0 0 3px rgba(10, 132, 255, 0.24);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      color: var(--text-primary);
+      background: transparent;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -webkit-app-region: no-drag;
+    }
+
+    .panel {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(155deg, rgba(255, 255, 255, 0.44) 0%, rgba(248, 248, 252, 0.5) 55%, rgba(238, 242, 249, 0.56) 100%),
+        var(--bg-app);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 18px 46px rgba(9, 20, 46, 0.2);
+      backdrop-filter: saturate(1.25) blur(24px);
+      -webkit-backdrop-filter: saturate(1.25) blur(24px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(110% 75% at 100% -10%, rgba(10, 132, 255, 0.16) 0%, transparent 45%);
+    }
+
+    .toolbar {
+      position: relative;
+      z-index: 2;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.22);
+      -webkit-app-region: drag;
+      cursor: grab;
+    }
+
+    .close-btn {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      background: linear-gradient(180deg, #ff6b62 0%, #ff574d 100%);
+      cursor: pointer;
+      text-indent: -9999px;
+      overflow: hidden;
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 1px;
+      flex: 1;
+    }
+
+    .header-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+    }
+
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .context-badge {
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 11px;
+      font-weight: 500;
+      color: #4f4f54;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(60, 60, 67, 0.1);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      scroll-behavior: smooth;
+      -webkit-app-region: no-drag;
+    }
+
+    .content::-webkit-scrollbar { width: 8px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb {
+      background: rgba(60, 60, 67, 0.24);
+      border-radius: 99px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .group {
+      background: var(--bg-panel);
+      border: 1px solid rgba(60, 60, 67, 0.12);
+      border-radius: var(--radius-lg);
+      margin-bottom: 10px;
+      padding: 12px;
+      animation: liftIn 220ms ease both;
+    }
+
+    .group:last-child {
+      margin-bottom: 0;
+    }
+
+    @keyframes liftIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .confidence {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 4px 10px;
+    }
+
+    .confidence::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .confidence-high {
+      color: #1b7f33;
+      background: rgba(47, 179, 68, 0.14);
+      border-color: rgba(47, 179, 68, 0.28);
+    }
+
+    .confidence-medium {
+      color: #8e5f00;
+      background: rgba(211, 140, 0, 0.16);
+      border-color: rgba(211, 140, 0, 0.3);
+    }
+
+    .confidence-low {
+      color: #a63030;
+      background: rgba(214, 69, 69, 0.13);
+      border-color: rgba(214, 69, 69, 0.25);
+    }
+
+    .summary {
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .orientation {
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(10, 132, 255, 0.25);
+      background: linear-gradient(180deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.07) 100%);
+      padding: 10px 11px;
+    }
+
+    .orientation-label {
+      font-size: 11px;
+      color: #005cb9;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .orientation-text {
+      font-size: 13px;
+      line-height: 1.42;
+      color: #103a60;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+
+    .memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid rgba(60, 60, 67, 0.12);
+      background: rgba(255, 255, 255, 0.46);
+    }
+
+    .memory-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid rgba(60, 60, 67, 0.12);
+    }
+
+    .memory-item:last-child {
+      border-bottom: 0;
+    }
+
+    .memory-text {
+      font-size: 12.5px;
+      line-height: 1.35;
+      color: var(--text-primary);
+    }
+
+    .memory-source {
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .memory-ago {
+      font-size: 11px;
+      color: #8b8b92;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .nia-label {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #97979e;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .next-steps-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .next-steps-list li {
+      position: relative;
+      padding: 8px 10px 8px 34px;
+      font-size: 12.8px;
+      line-height: 1.35;
+      border: 1px solid rgba(60, 60, 67, 0.12);
+      border-radius: 9px;
+      background: var(--bg-row);
+      color: var(--text-primary);
+    }
+
+    .next-steps-list li::before {
+      content: counter(step-counter);
+      counter-increment: step-counter;
+      position: absolute;
+      left: 10px;
+      top: 7px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--blue-weak);
+      color: #005cb9;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .next-steps-list {
+      counter-reset: step-counter;
+    }
+
+    .ask-back {
+      font-size: 12.8px;
+      line-height: 1.4;
+      color: #103a60;
+      background: rgba(10, 132, 255, 0.1);
+      border: 1px solid rgba(10, 132, 255, 0.22);
+      border-radius: var(--radius-md);
+      padding: 10px;
+    }
+
+    .memory-bullets {
+      margin-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--text-primary);
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+
+    .suggestion-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .suggestion-btn {
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(60, 60, 67, 0.18);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      transition: border-color 120ms ease, box-shadow 120ms ease, transform 100ms ease;
+    }
+
+    .suggestion-btn:hover {
+      border-color: rgba(10, 132, 255, 0.55);
+      box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.12);
+    }
+
+    .suggestion-btn.selected {
+      border-color: rgba(10, 132, 255, 0.75);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.16);
+      background: rgba(242, 249, 255, 0.95);
+    }
+
+    .suggestion-btn:active {
+      transform: translateY(1px);
+    }
+
+    .suggestion-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .suggestion-label {
+      font-size: 12.8px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .suggestion-why {
+      font-size: 11.5px;
+      color: #4b4b52;
+      margin-bottom: 5px;
+    }
+
+    .suggestion-preview {
+      font-size: 11.5px;
+      color: #7a7a82;
+    }
+
+    .action-status {
+      margin-top: 8px;
+      font-size: 12px;
+      border-radius: 8px;
+      padding: 8px 9px;
+      border: 1px solid transparent;
+    }
+
+    .action-status.ok {
+      background: rgba(47, 179, 68, 0.11);
+      border-color: rgba(47, 179, 68, 0.24);
+      color: #1b7f33;
+    }
+
+    .action-status.err {
+      background: rgba(214, 69, 69, 0.1);
+      border-color: rgba(214, 69, 69, 0.25);
+      color: #a63030;
+    }
+
+    .feedback {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(60, 60, 67, 0.16);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .feedback-btn {
+      border: 0;
+      background: transparent;
+      color: #74747b;
+      width: 34px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 120ms ease, color 120ms ease;
+      -webkit-app-region: no-drag;
+    }
+
+    .feedback-btn + .feedback-btn {
+      border-left: 1px solid rgba(60, 60, 67, 0.14);
+    }
+
+    .feedback-btn:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-primary);
+    }
+
+    .feedback-btn.active {
+      background: rgba(10, 132, 255, 0.14);
+      color: #005cb9;
+    }
+
+    .loading {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      animation: fadeIn 160ms ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(60, 60, 67, 0.2);
+      border-top-color: var(--blue);
+      animation: spin 650ms linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .error {
+      padding: 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(214, 69, 69, 0.3);
+      background: rgba(214, 69, 69, 0.1);
+      color: #a63030;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .input-area {
+      position: relative;
+      z-index: 2;
+      border-top: 1px solid var(--line);
+      padding: 10px 12px 12px;
+      background: rgba(255, 255, 255, 0.24);
+      -webkit-app-region: no-drag;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-hint {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #7c7c84;
+      letter-spacing: 0.01em;
+      -webkit-app-region: no-drag;
+    }
+
+    .input-field {
+      flex: 1;
+      border: 1px solid rgba(60, 60, 67, 0.24);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.62);
+      color: var(--text-primary);
+      padding: 9px 11px;
+      font-size: 13px;
+      line-height: 1.2;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+      -webkit-app-region: no-drag;
+    }
+
+    .input-field::placeholder {
+      color: #9a9aa2;
+    }
+
+    .input-field:focus {
+      border-color: rgba(10, 132, 255, 0.66);
+      box-shadow: var(--focus-ring);
+    }
+
+    .send-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      border: 0;
+      background: linear-gradient(180deg, #1490ff 0%, #0a84ff 100%);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 100ms ease, filter 120ms ease;
+      -webkit-app-region: no-drag;
+    }
+
+    .suggestion-btn {
+      -webkit-app-region: no-drag;
+    }
+
+    .send-btn:hover {
+      filter: brightness(0.95);
+    }
+
+    .send-btn:active {
+      transform: translateY(1px);
+    }
+
+    .send-btn:disabled {
+      background: rgba(120, 120, 128, 0.24);
+      color: rgba(255, 255, 255, 0.92);
+      cursor: default;
+      transform: none;
+      filter: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="toolbar">
+      <button class="close-btn" id="closeBtn" aria-label="Close">Close</button>
+      <div class="title-wrap">
+        <span class="header-title">Elephant</span>
+        <span class="header-subtitle">Context Assistant</span>
+      </div>
+      <span class="context-badge" id="contextBadge">Preparing...</span>
+    </div>
+
+    <div class="content" id="content">
+      <div class="loading" id="loadingState">
+        <div class="spinner"></div>
+        <span class="loading-text">Analyzing current context...</span>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <input type="text" class="input-field" id="questionInput" placeholder="Type to filter actions..." disabled>
+        <button class="send-btn" id="sendBtn" disabled>&uarr;</button>
+      </div>
+      <div class="input-hint">↑↓ select · ↵ run selected · Esc close</div>
+    </div>
+  </div>
+
+  <script>
+    const content = document.getElementById('content');
+    const contextBadge = document.getElementById('contextBadge');
+    const closeBtn = document.getElementById('closeBtn');
+    const questionInput = document.getElementById('questionInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let currentResponseId = null;
+    let workflowMode = false;
+    let workflowSelectedIndex = -1;
+
+    closeBtn.addEventListener('click', () => window.enk.elephantDismiss());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') window.enk.elephantDismiss();
+    });
+
+    questionInput.addEventListener('mousedown', () => {
+      window.enk.elephantFocusInput();
+    });
+    questionInput.addEventListener('blur', () => {
+      window.enk.elephantBlurInput();
+    });
+
+    function getVisibleSuggestionButtons() {
+      return Array.from(document.querySelectorAll('.suggestion-btn')).filter((btn) => btn.style.display !== 'none');
+    }
+
+    function setSelectedSuggestion(index) {
+      const buttons = getVisibleSuggestionButtons();
+      if (buttons.length === 0) {
+        workflowSelectedIndex = -1;
+        return;
+      }
+
+      const boundedIndex = Math.max(0, Math.min(index, buttons.length - 1));
+      workflowSelectedIndex = boundedIndex;
+
+      buttons.forEach((btn, i) => {
+        btn.classList.toggle('selected', i === boundedIndex);
+      });
+    }
+
+    function applySuggestionFilter() {
+      if (!workflowMode) {
+        sendBtn.disabled = !questionInput.value.trim();
+        return;
+      }
+
+      const query = questionInput.value.trim().toLowerCase();
+      const allButtons = Array.from(document.querySelectorAll('.suggestion-btn'));
+
+      allButtons.forEach((button) => {
+        const haystack = [
+          button.getAttribute('data-label') || '',
+          button.getAttribute('data-why') || '',
+          button.getAttribute('data-preview') || ''
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        const visible = query.length === 0 || haystack.includes(query);
+        button.style.display = visible ? '' : 'none';
+      });
+
+      const visibleButtons = getVisibleSuggestionButtons();
+      if (visibleButtons.length === 0) {
+        workflowSelectedIndex = -1;
+      } else if (workflowSelectedIndex < 0 || workflowSelectedIndex >= visibleButtons.length) {
+        setSelectedSuggestion(0);
+      } else {
+        setSelectedSuggestion(workflowSelectedIndex);
+      }
+
+      sendBtn.disabled = visibleButtons.length === 0 && !query;
+    }
+
+    async function runSuggestionButton(button) {
+      const actionStatus = document.getElementById('actionStatus');
+      const buttons = Array.from(document.querySelectorAll('.suggestion-btn'));
+      const suggestionId = button?.getAttribute('data-suggestion-id');
+      if (!suggestionId) return;
+
+      for (const b of buttons) b.disabled = true;
+      if (actionStatus) {
+        actionStatus.style.display = 'block';
+        actionStatus.className = 'action-status';
+        actionStatus.textContent = 'Executing action...';
+      }
+
+      try {
+        const result = await window.enk.elephantRunSuggestion(suggestionId);
+        if (actionStatus) {
+          actionStatus.className = result && result.ok ? 'action-status ok' : 'action-status err';
+          actionStatus.textContent = result && result.message ? result.message : 'Action failed.';
+        }
+      } catch (err) {
+        if (actionStatus) {
+          actionStatus.className = 'action-status err';
+          actionStatus.textContent = `Action failed: ${escapeHtml(String(err))}`;
+        }
+      } finally {
+        for (const b of buttons) b.disabled = false;
+      }
+    }
+
+    function sendQuestion() {
+      if (workflowMode) {
+        const visibleButtons = getVisibleSuggestionButtons();
+        if (visibleButtons.length > 0) {
+          const indexToRun = workflowSelectedIndex >= 0 ? workflowSelectedIndex : 0;
+          void runSuggestionButton(visibleButtons[indexToRun]);
+          return;
+        }
+      }
+
+      const q = questionInput.value.trim();
+      if (!q) return;
+      questionInput.value = '';
+      questionInput.disabled = true;
+      sendBtn.disabled = true;
+      window.enk.elephantFollowUp(q);
+    }
+
+    sendBtn.addEventListener('click', sendQuestion);
+    questionInput.addEventListener('keydown', (e) => {
+      if (workflowMode && e.key === 'ArrowDown') {
+        e.preventDefault();
+        const visibleButtons = getVisibleSuggestionButtons();
+        if (visibleButtons.length > 0) {
+          setSelectedSuggestion((workflowSelectedIndex + 1) % visibleButtons.length);
+        }
+        return;
+      }
+
+      if (workflowMode && e.key === 'ArrowUp') {
+        e.preventDefault();
+        const visibleButtons = getVisibleSuggestionButtons();
+        if (visibleButtons.length > 0) {
+          const next = workflowSelectedIndex <= 0 ? visibleButtons.length - 1 : workflowSelectedIndex - 1;
+          setSelectedSuggestion(next);
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendQuestion();
+      }
+    });
+    questionInput.addEventListener('input', () => {
+      applySuggestionFilter();
+    });
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function parseElephantResponse(text) {
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      } catch {
+        // Fall through to plain text rendering.
+      }
+      return {
+        summary: text,
+        orientation: null,
+        relevant_memory: [],
+        next_steps: [],
+        ask_back: null,
+        confidence: 'medium'
+      };
+    }
+
+    function confidenceClass(confidence) {
+      if (confidence === 'high') return 'confidence-high';
+      if (confidence === 'low') return 'confidence-low';
+      return 'confidence-medium';
+    }
+
+    function bindFeedbackHandlers() {
+      const thumbUp = document.getElementById('thumbUp');
+      const thumbDown = document.getElementById('thumbDown');
+
+      thumbUp?.addEventListener('click', function() {
+        thumbUp.classList.add('active');
+        thumbDown?.classList.remove('active');
+        window.enk.elephantFeedback(currentResponseId, true);
+      });
+
+      thumbDown?.addEventListener('click', function() {
+        thumbDown.classList.add('active');
+        thumbUp?.classList.remove('active');
+        window.enk.elephantFeedback(currentResponseId, false);
+      });
+    }
+
+    function showLegacyResponse(data) {
+      workflowMode = false;
+      workflowSelectedIndex = -1;
+      currentResponseId = Date.now().toString();
+      const parsed = parseElephantResponse(data.text);
+
+      let html = '';
+      html += '<div class="group">';
+      html += `<div class="meta-row"><span class="confidence ${confidenceClass(parsed.confidence)}">${escapeHtml(parsed.confidence || 'medium')} confidence</span></div>`;
+      if (parsed.summary) {
+        html += `<div class="summary">${escapeHtml(parsed.summary)}</div>`;
+      }
+      html += '</div>';
+
+      if (parsed.orientation && parsed.orientation !== 'null' && parsed.orientation !== 'Null') {
+        html += '<div class="group">';
+        html += '<div class="orientation">';
+        html += '<div class="orientation-label">Resume context</div>';
+        html += `<div class="orientation-text">${escapeHtml(parsed.orientation)}</div>`;
+        html += '</div>';
+        html += '</div>';
+      }
+
+      if (parsed.relevant_memory && parsed.relevant_memory.length > 0) {
+        html += '<div class="group">';
+        html += '<div class="section-title">Relevant Memory</div>';
+        html += '<div class="memory-list">';
+        for (const mem of parsed.relevant_memory) {
+          html += '<div class="memory-item">';
+          html += '<div>';
+          html += `<div class="memory-text">${escapeHtml(mem.text || '')}</div>`;
+          html += `<div class="memory-source">${escapeHtml(mem.source || '')}</div>`;
+          html += '</div>';
+          html += `<span class="memory-ago">${escapeHtml(mem.ago || '')}</span>`;
+          html += '</div>';
+        }
+        html += '</div>';
+        html += '<div class="nia-label">memory source: nia</div>';
+        html += '</div>';
+      }
+
+      if (parsed.next_steps && parsed.next_steps.length > 0) {
+        html += '<div class="group">';
+        html += '<div class="section-title">Next Steps</div>';
+        html += '<ol class="next-steps-list">';
+        for (const step of parsed.next_steps) {
+          html += `<li>${escapeHtml(step)}</li>`;
+        }
+        html += '</ol>';
+        html += '</div>';
+      }
+
+      if (parsed.ask_back && parsed.ask_back !== 'null' && parsed.ask_back !== 'Null') {
+        html += '<div class="group">';
+        html += `<div class="ask-back">${escapeHtml(parsed.ask_back)}</div>`;
+        html += '</div>';
+      }
+
+      html += '<div class="group">';
+      html += '<div class="feedback">';
+      html += '<button class="feedback-btn" id="thumbUp" title="Helpful">+</button>';
+      html += '<button class="feedback-btn" id="thumbDown" title="Not helpful">-</button>';
+      html += '</div>';
+      html += '</div>';
+
+      content.innerHTML = html;
+      questionInput.disabled = false;
+      questionInput.placeholder = 'Ask a follow-up question';
+      questionInput.focus();
+      questionInput.value = '';
+      sendBtn.disabled = true;
+      bindFeedbackHandlers();
+
+      if (data.context) {
+        contextBadge.textContent = data.context.app || 'Current App';
+      }
+    }
+
+    function showWorkflowResponse(data) {
+      workflowMode = true;
+      workflowSelectedIndex = -1;
+      currentResponseId = data.correlation_id || Date.now().toString();
+
+      const nowState = data.now_state || {};
+      const memoryBrief = Array.isArray(data.memory_brief) ? data.memory_brief : [];
+      const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
+
+      let html = '';
+      html += '<div class="group">';
+      html += `<div class="meta-row"><span class="confidence ${confidenceClass(nowState.confidence || 'medium')}">${escapeHtml(nowState.confidence || 'medium')} confidence</span></div>`;
+      html += `<div class="summary">${escapeHtml(data.state_summary || 'You are in Gmail.')}</div>`;
+      html += '</div>';
+
+      if (memoryBrief.length > 0) {
+        html += '<div class="group">';
+        html += '<div class="section-title">Memory Brief</div>';
+        html += '<ul class="memory-bullets">';
+        for (const bullet of memoryBrief.slice(0, 3)) {
+          html += `<li>${escapeHtml(bullet)}</li>`;
+        }
+        html += '</ul>';
+        html += '</div>';
+      }
+
+      html += '<div class="group">';
+      html += '<div class="section-title">Suggestions</div>';
+      html += '<div class="suggestion-list">';
+      if (suggestions.length === 0) {
+        html += '<div class="suggestion-preview">No safe suggestions available right now.</div>';
+      } else {
+        for (const suggestion of suggestions.slice(0, 3)) {
+          html += `<button class="suggestion-btn" data-suggestion-id="${escapeAttr(suggestion.id)}" data-label="${escapeAttr(suggestion.label || '')}" data-why="${escapeAttr(suggestion.why || '')}" data-preview="${escapeAttr(suggestion.preview || '')}">`;
+          html += `<div class="suggestion-label">${escapeHtml(suggestion.label || 'Suggestion')}</div>`;
+          html += `<div class="suggestion-why">${escapeHtml(suggestion.why || '')}</div>`;
+          html += `<div class="suggestion-preview">${escapeHtml(suggestion.preview || '')}</div>`;
+          html += '</button>';
+        }
+      }
+      html += '</div>';
+      html += '<div class="action-status" id="actionStatus" style="display:none"></div>';
+      html += '</div>';
+
+      html += '<div class="group">';
+      html += '<div class="feedback">';
+      html += '<button class="feedback-btn" id="thumbUp" title="Helpful">+</button>';
+      html += '<button class="feedback-btn" id="thumbDown" title="Not helpful">-</button>';
+      html += '</div>';
+      html += '</div>';
+
+      content.innerHTML = html;
+      questionInput.disabled = false;
+      questionInput.placeholder = 'Type to filter actions...';
+      questionInput.value = '';
+      sendBtn.disabled = false;
+      questionInput.focus();
+      bindFeedbackHandlers();
+
+      const buttons = Array.from(document.querySelectorAll('.suggestion-btn'));
+
+      for (const button of buttons) {
+        button.addEventListener('click', () => {
+          void runSuggestionButton(button);
+        });
+      }
+
+      applySuggestionFilter();
+      setSelectedSuggestion(0);
+
+      if (data.context) {
+        contextBadge.textContent = data.context.app || 'Gmail';
+      } else {
+        contextBadge.textContent = data?.now_state?.app || 'Context';
+      }
+    }
+
+    function showError(message) {
+      workflowMode = false;
+      workflowSelectedIndex = -1;
+      content.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+      questionInput.disabled = false;
+      questionInput.placeholder = 'Ask a follow-up question';
+      sendBtn.disabled = !questionInput.value.trim();
+    }
+
+    function showLoading() {
+      workflowMode = false;
+      workflowSelectedIndex = -1;
+      content.innerHTML = '<div class="loading"><div class="spinner"></div><span class="loading-text">Analyzing current context...</span></div>';
+      questionInput.disabled = true;
+      sendBtn.disabled = true;
+    }
+
+    window.enk.onElephantResponse((data) => {
+      if (data && data.mode === 'workflow') {
+        showWorkflowResponse(data);
+        return;
+      }
+      showLegacyResponse(data);
+    });
+    window.enk.onElephantError((message) => showError(message));
+    window.enk.onElephantLoading(() => showLoading());
+  </script>
+</body>
+</html>
