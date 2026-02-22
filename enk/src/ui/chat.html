@@ -973,6 +973,11 @@
           <label>Nia API Key</label>
           <input type="password" id="settNiaKey" placeholder="nk_..." autocomplete="off" spellcheck="false">
         </div>
+        <div class="form-group">
+          <label>Vision API Key (OpenAI or Gemini)</label>
+          <input type="password" id="settGeminiKey" placeholder="sk-... or AIza..." autocomplete="off" spellcheck="false">
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">OpenAI (sk-...) uses GPT-4o-mini. Gemini (AIza...) uses Gemini 2.0 Flash.</p>
+        </div>
         <div class="toggle-row">
           <span>Monitoring Active</span>
           <label class="toggle"><input type="checkbox" id="settEnabled" checked><span class="toggle-slider"></span></label>
@@ -980,6 +985,10 @@
         <div class="toggle-row">
           <span>Scam Detection</span>
           <label class="toggle"><input type="checkbox" id="settScam" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span>Vision Extraction</span>
+          <label class="toggle"><input type="checkbox" id="settVision"><span class="toggle-slider"></span></label>
         </div>
         <div style="margin-top: 20px;">
           <button class="settings-save" id="settSaveBtn">Save Settings</button>
@@ -1305,8 +1314,10 @@
     // ─── Settings ───
     const settAnthropicKey = document.getElementById('settAnthropicKey');
     const settNiaKey = document.getElementById('settNiaKey');
+    const settGeminiKey = document.getElementById('settGeminiKey');
     const settEnabled = document.getElementById('settEnabled');
     const settScam = document.getElementById('settScam');
+    const settVision = document.getElementById('settVision');
     const settSaveBtn = document.getElementById('settSaveBtn');
     const settSaveStatus = document.getElementById('settSaveStatus');
 
@@ -1321,8 +1332,10 @@
     window.enk.getSettings().then(s => {
       if (s.anthropicKey) settAnthropicKey.value = s.anthropicKey;
       if (s.niaKey) settNiaKey.value = s.niaKey;
+      if (s.geminiKey) settGeminiKey.value = s.geminiKey;
       settEnabled.checked = s.enabled;
       settScam.checked = s.scamDetection;
+      settVision.checked = s.useVisionExtraction || false;
 
       if (!s.anthropicKey || !s.niaKey) {
         switchToView('settings');
@@ -1334,8 +1347,10 @@
       await window.enk.saveSettings({
         anthropicKey: settAnthropicKey.value.trim(),
         niaKey: settNiaKey.value.trim(),
+        geminiKey: settGeminiKey.value.trim(),
         enabled: settEnabled.checked,
         scamDetection: settScam.checked,
+        useVisionExtraction: settVision.checked,
         firstLaunch: false,
       });
       settSaveStatus.classList.add('visible');
