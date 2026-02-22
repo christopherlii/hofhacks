@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Enk</title>
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --green: #4ade80;
+      --red: #ef4444;
+      --yellow: #facc15;
+      --border: #334155;
+      --sidebar-width: 240px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 20px 16px 12px;
+      -webkit-app-region: drag;
+    }
+    .sidebar-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .sidebar-header .subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .nav {
+      flex: 1;
+      padding: 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .nav-item.active { background: var(--accent); color: white; }
+    .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .sidebar-stats {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .stat-row { display: flex; justify-content: space-between; padding: 3px 0; }
+    .stat-val { color: var(--text-secondary); font-weight: 600; }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .status-dot.inactive { background: var(--text-muted); }
+
+    /* ─── Main content ─── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .view.active { display: flex; }
+
+    /* ─── Chat view ─── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .messages::-webkit-scrollbar { width: 6px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
+    .message {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.55;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .message.error {
+      align-self: flex-start;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--red);
+    }
+    .message .msg-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+    .message .timestamp {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .message.user .timestamp { color: rgba(255,255,255,0.6); }
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 6px;
+      font-size: 11px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .message:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .copy-btn.copied { opacity: 1; color: var(--green); }
+    .typing-indicator {
+      align-self: flex-start;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      display: none;
+    }
+    .typing-indicator.visible { display: flex; gap: 4px; align-items: center; }
+    .typing-dot {
+      width: 6px; height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: typingBounce 1.4s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+    .welcome-msg {
+      text-align: center;
+      padding: 60px 40px;
+      color: var(--text-muted);
+    }
+    .welcome-msg h2 {
+      font-size: 22px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .welcome-msg p { font-size: 14px; line-height: 1.6; }
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .suggestion {
+      padding: 8px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .suggestion:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--accent); }
+    .chat-input-area {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      max-height: 120px;
+      line-height: 1.4;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .send-btn {
+      width: 42px; height: 42px;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--accent-hover); }
+    .send-btn:disabled { background: var(--bg-tertiary); cursor: not-allowed; }
+    .send-btn svg { width: 18px; height: 18px; }
+
+    /* ─── Activity view ─── */
+    .activity-view { padding: 24px; overflow-y: auto; }
+    .activity-view h2 { font-size: 18px; margin-bottom: 16px; }
+    .activity-section { margin-bottom: 28px; }
+    .activity-section h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .app-bar-container { display: flex; flex-direction: column; gap: 8px; }
+    .app-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .app-bar-label {
+      width: 140px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .app-bar-track {
+      flex: 1;
+      height: 24px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .app-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 6px;
+      transition: width 0.4s ease;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      font-size: 11px;
+      color: white;
+      font-weight: 600;
+      min-width: 40px;
+    }
+    .timeline-item {
+      display: flex;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .timeline-time { color: var(--text-muted); flex-shrink: 0; width: 50px; }
+    .timeline-app { color: var(--accent); font-weight: 600; flex-shrink: 0; width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .timeline-title { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .action-btn {
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ─── Memory view ─── */
+    .memory-view { padding: 24px; overflow-y: auto; }
+    .memory-view h2 { font-size: 18px; margin-bottom: 16px; }
+    .md-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .md-card:hover { border-color: var(--accent); }
+    .md-card h4 { font-size: 15px; margin-bottom: 4px; }
+    .md-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+    .md-viewer {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+    .md-viewer.active { display: flex; }
+    .md-viewer-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .md-back-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 8px;
+    }
+    .md-content {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg-secondary);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    /* ─── Settings view ─── */
+    .settings-view { padding: 24px; overflow-y: auto; }
+    .settings-view h2 { font-size: 18px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .form-group input[type="password"],
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-secondary);
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .toggle-row span { font-size: 14px; color: var(--text-primary); }
+    .toggle {
+      position: relative;
+      width: 44px; height: 24px;
+      cursor: pointer;
+    }
+    .toggle input { display: none; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--green); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+    .settings-save {
+      padding: 10px 24px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .settings-save:hover { background: var(--accent-hover); }
+    .save-status {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 13px;
+      color: var(--green);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .save-status.visible { opacity: 1; }
+
+    /* ─── Search bar in activity ─── */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-btn {
+      padding: 10px 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ─── Date picker ─── */
+    .date-picker {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+    .date-picker::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+
+    /* ─── Graph Chips & Time Btns ─── */
+    .graph-chip {
+      font-size: 11px; padding: 3px 8px; border-radius: 12px; cursor: pointer;
+      border: 1px solid var(--chip-color, var(--border));
+      background: transparent; color: var(--chip-color, var(--text-muted));
+      transition: all 0.15s ease; font-family: inherit;
+    }
+    .graph-chip.active {
+      background: var(--chip-color, var(--border));
+      color: #0f172a; font-weight: 600;
+    }
+    .graph-chip:hover { opacity: 0.85; }
+    .graph-time-btn {
+      font-size: 10px; padding: 2px 8px; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+      transition: all 0.15s ease; font-family: inherit;
+    }
+    .graph-time-btn.active {
+      background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500;
+    }
+    .graph-time-btn:hover:not(.active) { border-color: var(--text-muted); }
+
+    .inspector-section { margin-bottom: 14px; }
+    .inspector-section-title {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); margin-bottom: 6px; font-weight: 500;
+    }
+    .inspector-badge {
+      display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px;
+      font-weight: 500; vertical-align: middle; margin-left: 4px;
+    }
+    .inspector-activity-item {
+      font-size: 11px; color: var(--text-secondary); padding: 4px 0;
+      border-bottom: 1px solid rgba(51,65,85,0.5); line-height: 1.5;
+    }
+    .inspector-activity-item:last-child { border-bottom: none; }
+    .inspector-connection {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+      padding: 3px 8px; border-radius: 6px; background: var(--bg-primary);
+      border: 1px solid var(--border); margin: 2px 2px 2px 0; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .inspector-connection:hover { border-color: var(--accent); }
+    .inspector-connection .conn-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .selected-node-tag {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+      padding: 2px 8px; border-radius: 6px; background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.3); margin: 2px; color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Enk</h1>
+      <div class="subtitle">Personal Memory Assistant</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item active" data-view="chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Chat
+      </div>
+      <div class="nav-item" data-view="activity">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Activity
+      </div>
+      <div class="nav-item" data-view="graph">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>
+        Context Graph
+      </div>
+      <div class="nav-item" data-view="memory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Memory Files
+      </div>
+      <div class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </div>
+    </div>
+    <div class="sidebar-stats">
+      <div class="stat-row">
+        <span><span class="status-dot" id="sidebarDot"></span>Status</span>
+        <span class="stat-val" id="sidebarStatus">Active</span>
+      </div>
+      <div class="stat-row">
+        <span>Switches</span>
+        <span class="stat-val" id="sidebarSwitches">0</span>
+      </div>
+      <div class="stat-row">
+        <span>Top App</span>
+        <span class="stat-val" id="sidebarTopApp">--</span>
+      </div>
+      <div class="stat-row">
+        <span>Pending Flush</span>
+        <span class="stat-val" id="sidebarPending">0</span>
+      </div>
+      <div class="stat-row">
+        <span>OCR Captures</span>
+        <span class="stat-val" id="sidebarSnapshots">0</span>
+      </div>
+      <div class="stat-row">
+        <span>Entities</span>
+        <span class="stat-val" id="sidebarEntities">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Chat View -->
+    <div class="view active" id="chatView">
+      <div class="messages" id="messages">
+        <div class="welcome-msg" id="welcomeMsg">
+          <h2>Hey there</h2>
+          <p>I'm Enk, your personal memory assistant.<br>Ask me anything about your computer activity.</p>
+          <div class="suggestions">
+            <div class="suggestion" data-q="What did I do in the last hour?">Last hour summary</div>
+            <div class="suggestion" data-q="Which apps did I use the most today?">Top apps today</div>
+            <div class="suggestion" data-q="Show me any patterns you've noticed">My patterns</div>
+            <div class="suggestion" data-q="What was I reading recently?">Recent reading</div>
+          </div>
+        </div>
+      </div>
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+      <div class="chat-input-area">
+        <div class="input-wrapper">
+          <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask about your activity..." autocomplete="off"></textarea>
+          <button class="send-btn" id="sendBtn" title="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity View -->
+    <div class="view" id="activityView">
+      <div class="activity-view">
+        <h2>Activity Dashboard</h2>
+
+        <div class="activity-section">
+          <h3>App Usage (Current Session)</h3>
+          <div class="app-bar-container" id="appBars"></div>
+        </div>
+
+        <div class="activity-section">
+          <h3>Recent Timeline</h3>
+          <div id="timeline"></div>
+        </div>
+
+        <div class="activity-section">
+          <h3>Actions</h3>
+          <div class="action-btns">
+            <button class="action-btn" id="flushBtn">Flush to Nia Now</button>
+            <button class="action-btn" id="detectPatternsBtn">Detect Patterns Now</button>
+          </div>
+        </div>
+
+        <div class="activity-section">
+          <h3>Search Nia Memories</h3>
+          <div class="search-bar">
+            <input class="search-input" id="niaSearchInput" placeholder="Search your memories...">
+            <button class="search-btn" id="niaSearchBtn">Search</button>
+          </div>
+          <div id="niaSearchResults"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Memory Files View -->
+    <div class="view" id="memoryView">
+      <div class="memory-view" id="memoryList">
+        <h2>Memory Files</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+          Your assistant's personality and memory, modeled after OpenClaw's soul.md / user.md system.
+        </p>
+        <div class="md-card" data-type="soul">
+          <h4>soul.md</h4>
+          <p>Enk's core identity, personality, and behavioral rules (procedural memory)</p>
+        </div>
+        <div class="md-card" data-type="user">
+          <h4>user.md</h4>
+          <p>Your profile, preferences, and context (fact memory)</p>
+        </div>
+        <div class="md-card" data-type="patterns">
+          <h4>patterns.md</h4>
+          <p>Detected recurring behaviors and suggestions (fact memory)</p>
+        </div>
+        <div class="md-card" data-type="daily">
+          <h4>Daily Summary</h4>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+            <input type="date" class="date-picker" id="dailyDatePicker">
+            <span style="font-size: 12px; color: var(--text-muted);">Pick a date to view</span>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 32px;">Nia Brain</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">
+          Everything Nia knows about you — all stored memories, grouped by type.
+        </p>
+        <div class="action-btns" style="margin-bottom: 16px;">
+          <button class="action-btn" id="loadNiaBrainBtn">Load All Memories</button>
+          <span id="niaBrainCount" style="font-size: 12px; color: var(--text-muted); align-self: center;"></span>
+        </div>
+        <div id="niaBrainContainer"></div>
+      </div>
+      <div class="md-viewer" id="mdViewer">
+        <div class="memory-view">
+          <div class="md-viewer-header">
+            <button class="md-back-btn" id="mdBackBtn">&larr; Back</button>
+            <h3 id="mdViewerTitle">soul.md</h3>
+          </div>
+          <div class="md-content" id="mdContent">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Graph View -->
+    <div class="view" id="graphView">
+      <div style="display:flex;height:100%;overflow:hidden;">
+        <!-- Left: Graph Canvas -->
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+          <div style="padding:12px 16px 6px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <h2 style="font-size:17px;margin:0;font-weight:600;">Context Graph</h2>
+            <span id="graphNodeCount" style="font-size:11px;color:var(--text-muted);"></span>
+            <button class="action-btn" id="refreshGraphBtn" style="margin-left:auto;font-size:11px;padding:4px 10px;">Refresh</button>
+          </div>
+          <div id="graphCanvas" style="flex:1;position:relative;margin:0 8px 8px 16px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border);overflow:hidden;">
+            <div id="graphContainer" style="width:100%;height:100%;"></div>
+            <!-- Hover tooltip -->
+            <div id="graphTooltip" style="display:none;position:absolute;pointer-events:none;z-index:100;padding:6px 10px;border-radius:8px;background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);border:1px solid rgba(148,163,184,0.2);font-size:12px;color:#e2e8f0;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-width:280px;"></div>
+          </div>
+        </div>
+
+        <!-- Right: Inspector Panel -->
+        <div id="graphInspector" style="width:320px;flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid var(--border);overflow:hidden;">
+          <!-- Filters -->
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <input type="text" id="graphSearch" placeholder="Search entities..." style="width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text-primary);font-size:12px;outline:none;margin-bottom:8px;">
+            <div id="typeFilters" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+              <button class="graph-chip active" data-type="app" style="--chip-color:#64748b;">App</button>
+              <button class="graph-chip active" data-type="person" style="--chip-color:#3b82f6;">Person</button>
+              <button class="graph-chip active" data-type="topic" style="--chip-color:#4ade80;">Topic</button>
+              <button class="graph-chip active" data-type="content" style="--chip-color:#f97316;">Content</button>
+              <button class="graph-chip active" data-type="project" style="--chip-color:#a78bfa;">Project</button>
+              <button class="graph-chip active" data-type="place" style="--chip-color:#ef4444;">Place</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div id="timeFilter" style="display:flex;gap:3px;">
+                <button class="graph-time-btn active" data-mins="0">All</button>
+                <button class="graph-time-btn" data-mins="5">5m</button>
+                <button class="graph-time-btn" data-mins="15">15m</button>
+                <button class="graph-time-btn" data-mins="60">1h</button>
+              </div>
+              <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);cursor:pointer;white-space:nowrap;">
+                <input type="checkbox" id="verifiedOnly" style="width:12px;height:12px;accent-color:var(--green);"> Verified
+              </label>
+            </div>
+          </div>
+
+          <!-- What Enk Knows (understanding gauge) -->
+          <div id="understandingCard" style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-primary);">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:6px;">What Enk Knows</div>
+            <div id="understandingContent" style="font-size:11px;color:var(--text-secondary);line-height:1.5;max-height:80px;overflow-y:auto;"></div>
+            <div id="understandingStats" style="font-size:10px;color:var(--text-muted);margin-top:4px;"></div>
+          </div>
+
+          <!-- Selection info bar -->
+          <div id="selectionBar" style="padding:10px 14px;border-bottom:1px solid var(--border);display:none;flex-shrink:0;background:rgba(59,130,246,0.12);border-left:3px solid var(--accent);">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+              <div style="flex:1;min-width:0;">
+                <div id="selectionCount" style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px;"></div>
+                <div id="selectionPreview" style="font-size:11px;color:var(--text-secondary);font-style:italic;line-height:1.4;"></div>
+              </div>
+              <div style="display:flex;gap:6px;flex-shrink:0;">
+                <button id="analyzeGroupBtn" class="action-btn" style="font-size:11px;padding:4px 10px;">Analyze</button>
+                <button id="clearSelectionBtn" style="font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail pane (scrollable) -->
+          <div id="inspectorContent" style="flex:1;overflow-y:auto;padding:12px 14px;">
+            <div id="inspectorEmpty" style="color:var(--text-muted);font-size:13px;line-height:1.6;">
+              <div style="margin-bottom:12px;font-weight:500;color:var(--text-secondary);">How to use</div>
+              <div style="margin-bottom:6px;">Click a node or edge to inspect it.</div>
+              <div style="margin-bottom:6px;">Shift+click to select multiple nodes, then hit Analyze to understand relationships.</div>
+              <div>Use filters above to narrow by type, time, or search.</div>
+            </div>
+            <div id="inspectorDetail" style="display:none;"></div>
+            <div id="inspectorAnalysis" style="display:none;"></div>
+          </div>
+
+          <!-- Knowledge preview at bottom -->
+          <div style="border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:6px;">Knowledge</div>
+            <div id="knowledgePreview" style="font-size:11px;color:var(--text-secondary);white-space:pre-wrap;max-height:100px;overflow-y:auto;font-family:'SF Mono','Fira Code',monospace;line-height:1.5;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings View -->
+    <div class="view" id="settingsView">
+      <div class="settings-view">
+        <h2>Settings</h2>
+
+        <div id="setupBanner" style="display:none; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--accent);">Setup Required</div>
+          <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+            <strong>1. API Keys:</strong> Enter both keys below and click Save.<br>
+            <strong>2. Screen Recording:</strong> Go to <em>System Settings &gt; Privacy &amp; Security &gt; Screen Recording</em>, click <strong>+</strong>, then navigate to:<br>
+            <code style="background: var(--bg-primary); padding: 3px 6px; border-radius: 4px; font-size: 12px; display: inline-block; margin-top: 4px; word-break: break-all;">node_modules/electron/dist/Electron.app</code><br>
+            <span style="font-size: 12px; color: var(--text-muted);">(inside your enk project folder)</span><br>
+            After adding, restart the app.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Anthropic API Key (Claude)</label>
+          <input type="password" id="settAnthropicKey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label>Nia API Key</label>
+          <input type="password" id="settNiaKey" placeholder="nk_..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="toggle-row">
+          <span>Monitoring Active</span>
+          <label class="toggle"><input type="checkbox" id="settEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span>Scam Detection</span>
+          <label class="toggle"><input type="checkbox" id="settScam" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div style="margin-top: 20px;">
+          <button class="settings-save" id="settSaveBtn">Save Settings</button>
+          <span class="save-status" id="settSaveStatus">Saved!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Navigation ───
+    const navItems = document.querySelectorAll('.nav-item');
+    const views = document.querySelectorAll('.view');
+
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const viewId = item.dataset.view + 'View';
+        navItems.forEach(n => n.classList.remove('active'));
+        views.forEach(v => v.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(viewId).classList.add('active');
+
+        if (item.dataset.view === 'activity') refreshActivity();
+        if (item.dataset.view === 'graph') renderGraph();
+      });
+    });
+
+    // ─── Chat ───
+    const messagesEl = document.getElementById('messages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const welcomeMsg = document.getElementById('welcomeMsg');
+    let chatHistory = [];
+
+    function addMessage(role, text) {
+      if (welcomeMsg.parentElement) welcomeMsg.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.className = 'message ' + role;
+      div.dataset.text = text;
+      const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      div.innerHTML = `${escapeHtml(text)}<div class="msg-footer"><span class="timestamp">${time}</span><button class="copy-btn" onclick="copyMessage(this)">Copy</button></div>`;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      chatHistory.push({ role, text, time });
+    }
+
+    function copyMessage(btn) {
+      const text = btn.closest('.message').dataset.text;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function sendMessage() {
+      const query = chatInput.value.trim();
+      if (!query) return;
+
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      sendBtn.disabled = true;
+      addMessage('user', query);
+
+      typingIndicator.classList.add('visible');
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      try {
+        const result = await window.enk.chatQuery(query);
+        typingIndicator.classList.remove('visible');
+
+        if (result.error) {
+          addMessage('error', result.error);
+        } else {
+          addMessage('assistant', result.response);
+        }
+      } catch (e) {
+        typingIndicator.classList.remove('visible');
+        addMessage('error', 'Something went wrong: ' + e.message);
+      }
+
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Auto-resize textarea
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+    });
+
+    // Suggestions
+    document.querySelectorAll('.suggestion').forEach(s => {
+      s.addEventListener('click', () => {
+        chatInput.value = s.dataset.q;
+        sendMessage();
+      });
+    });
+
+    // ─── Activity ───
+    const appBarsEl = document.getElementById('appBars');
+    const timelineEl = document.getElementById('timeline');
+
+    async function refreshActivity() {
+      try {
+        const stats = await window.enk.getActivityStats();
+
+        // App bars
+        const maxMins = stats.apps.length > 0 ? Math.max(stats.apps[0].seconds, 1) : 1;
+        appBarsEl.innerHTML = stats.apps.slice(0, 10).map(a => {
+          const pct = Math.max(5, (a.seconds / maxMins) * 100);
+          const label = a.minutes > 0 ? `${a.minutes}m` : `${a.seconds}s`;
+          return `<div class="app-bar-row">
+            <div class="app-bar-label">${escapeHtml(a.app)}</div>
+            <div class="app-bar-track"><div class="app-bar-fill" style="width:${pct}%">${label}</div></div>
+          </div>`;
+        }).join('') || '<div style="color:var(--text-muted);font-size:13px;">No activity data yet.</div>';
+
+        // Timeline
+        const allItems = stats.recentActivity.slice().reverse();
+        const INITIAL_COUNT = 10;
+        const renderTimeline = (items) => items.map(e => {
+          const time = new Date(e.start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          const dur = Math.round(e.duration / 1000);
+          const durStr = dur >= 60 ? `${Math.round(dur / 60)}m` : `${dur}s`;
+          const display = e.summary || e.title;
+          return `<div class="timeline-item">
+            <div class="timeline-time">${time}</div>
+            <div class="timeline-app">${escapeHtml(e.app)} <span style="color:var(--text-muted);font-weight:400">${durStr}</span></div>
+            <div class="timeline-title">${escapeHtml(display)}</div>
+          </div>`;
+        }).join('');
+
+        if (allItems.length === 0) {
+          timelineEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No recent activity.</div>';
+        } else if (allItems.length <= INITIAL_COUNT) {
+          timelineEl.innerHTML = renderTimeline(allItems);
+        } else {
+          timelineEl.innerHTML = renderTimeline(allItems.slice(0, INITIAL_COUNT))
+            + `<button class="action-btn" id="showMoreBtn" style="margin-top:12px;width:100%;text-align:center;">Show ${allItems.length - INITIAL_COUNT} more</button>`;
+          document.getElementById('showMoreBtn').addEventListener('click', () => {
+            timelineEl.innerHTML = renderTimeline(allItems)
+              + `<button class="action-btn" id="showLessBtn" style="margin-top:12px;width:100%;text-align:center;">Show less</button>`;
+            document.getElementById('showLessBtn').addEventListener('click', () => refreshActivity());
+          });
+        }
+
+        // Sidebar stats
+        document.getElementById('sidebarSwitches').textContent = stats.totalSwitches;
+        if (stats.apps.length > 0) {
+          document.getElementById('sidebarTopApp').textContent = stats.apps[0].app;
+        }
+      } catch (e) {
+        console.error('Failed to refresh activity:', e);
+      }
+    }
+
+    async function refreshSessionStats() {
+      try {
+        const ss = await window.enk.getSessionStats();
+        document.getElementById('sidebarPending').textContent = ss.activityEntries;
+        document.getElementById('sidebarSnapshots').textContent = ss.contentSnapshots;
+        document.getElementById('sidebarEntities').textContent = ss.entityCount || 0;
+      } catch {}
+    }
+
+    setInterval(refreshActivity, 10000);
+    setInterval(refreshSessionStats, 5000);
+    refreshActivity();
+    refreshSessionStats();
+
+    document.getElementById('flushBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('flushBtn');
+      btn.textContent = 'Flushing...';
+      await window.enk.flushNow();
+      btn.textContent = 'Flushed!';
+      setTimeout(() => { btn.textContent = 'Flush to Nia Now'; }, 2000);
+    });
+
+    document.getElementById('detectPatternsBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('detectPatternsBtn');
+      btn.textContent = 'Analyzing...';
+      await window.enk.detectPatternsNow();
+      btn.textContent = 'Done!';
+      setTimeout(() => { btn.textContent = 'Detect Patterns Now'; }, 2000);
+    });
+
+    // Nia search
+    document.getElementById('niaSearchBtn').addEventListener('click', async () => {
+      const query = document.getElementById('niaSearchInput').value.trim();
+      if (!query) return;
+      const results = await window.enk.searchNia(query);
+      const container = document.getElementById('niaSearchResults');
+      if (!results || results.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px 0;">No results found.</div>';
+        return;
+      }
+      container.innerHTML = results.map(r => `
+        <div class="md-card" style="cursor:default;">
+          <h4>${escapeHtml(r.title || 'Untitled')}</h4>
+          <p>${escapeHtml((r.summary || r.content || '').slice(0, 200))}</p>
+        </div>
+      `).join('');
+    });
+
+    document.getElementById('niaSearchInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('niaSearchBtn').click();
+    });
+
+    // ─── Memory Files ───
+    const memoryList = document.getElementById('memoryList');
+    const mdViewer = document.getElementById('mdViewer');
+    const mdContent = document.getElementById('mdContent');
+    const mdViewerTitle = document.getElementById('mdViewerTitle');
+
+    // Set default date to today
+    document.getElementById('dailyDatePicker').valueAsDate = new Date();
+
+    document.querySelectorAll('.md-card[data-type]').forEach(card => {
+      card.addEventListener('click', async () => {
+        const type = card.dataset.type;
+        let date = null;
+        if (type === 'daily') {
+          date = document.getElementById('dailyDatePicker').value;
+          if (!date) return;
+        }
+
+        mdViewerTitle.textContent = type === 'daily' ? `${date}.md` : `${type}.md`;
+        mdContent.textContent = 'Loading...';
+        memoryList.style.display = 'none';
+        mdViewer.classList.add('active');
+
+        const result = await window.enk.exportMd(type, date);
+        if (result.error) {
+          mdContent.textContent = 'Error: ' + result.error;
+        } else {
+          mdContent.textContent = result.content;
+        }
+      });
+    });
+
+    document.getElementById('mdBackBtn').addEventListener('click', () => {
+      mdViewer.classList.remove('active');
+      memoryList.style.display = 'block';
+    });
+
+    // ─── Nia Brain ───
+    document.getElementById('loadNiaBrainBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('loadNiaBrainBtn');
+      const container = document.getElementById('niaBrainContainer');
+      btn.textContent = 'Loading...';
+      container.innerHTML = '';
+
+      try {
+        const contexts = await window.enk.listNiaContexts({ limit: 100 });
+        document.getElementById('niaBrainCount').textContent = `${contexts.length} memories found`;
+
+        if (!contexts || contexts.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No memories stored yet.</div>';
+          btn.textContent = 'Load All Memories';
+          return;
+        }
+
+        const groups = {};
+        for (const c of contexts) {
+          const type = c.memory_type || 'unknown';
+          if (!groups[type]) groups[type] = [];
+          groups[type].push(c);
+        }
+
+        const typeLabels = {
+          procedural: 'Procedural (permanent — identity/rules)',
+          fact: 'Facts (permanent — interests, patterns, profile)',
+          episodic: 'Episodic (7-day — activity logs)',
+          scratchpad: 'Scratchpad (1-hour — working session)',
+        };
+        const typeOrder = ['fact', 'episodic', 'procedural', 'scratchpad'];
+
+        let html = '';
+        for (const type of typeOrder) {
+          const items = groups[type];
+          if (!items || items.length === 0) continue;
+          const label = typeLabels[type] || type;
+          html += `<div style="margin-bottom: 20px;">
+            <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px;">${label} (${items.length})</h3>`;
+          for (const item of items) {
+            const title = escapeHtml(item.title || 'Untitled');
+            const summary = escapeHtml((item.summary || '').slice(0, 150));
+            const content = escapeHtml((item.content || '').slice(0, 500));
+            const tags = (item.tags || []).map(t => `<span style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:10px;color:var(--text-muted);">${escapeHtml(t)}</span>`).join(' ');
+            html += `<div class="md-card" style="cursor:pointer;" onclick="this.querySelector('.nia-detail').style.display = this.querySelector('.nia-detail').style.display === 'none' ? 'block' : 'none'">
+              <h4 style="font-size:14px;">${title}</h4>
+              <p style="font-size:12px;margin-top:2px;">${summary}</p>
+              <div style="margin-top:4px;">${tags}</div>
+              <div class="nia-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-secondary);white-space:pre-wrap;font-family:'SF Mono','Fira Code',monospace;max-height:200px;overflow-y:auto;">${content}</div>
+            </div>`;
+          }
+          html += '</div>';
+        }
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = `<div style="color:var(--red);font-size:13px;">Failed to load: ${e.message}</div>`;
+      }
+      btn.textContent = 'Refresh';
+    });
+
+    // ─── Settings ───
+    const settAnthropicKey = document.getElementById('settAnthropicKey');
+    const settNiaKey = document.getElementById('settNiaKey');
+    const settEnabled = document.getElementById('settEnabled');
+    const settScam = document.getElementById('settScam');
+    const settSaveBtn = document.getElementById('settSaveBtn');
+    const settSaveStatus = document.getElementById('settSaveStatus');
+
+    function switchToView(viewName) {
+      navItems.forEach(n => n.classList.remove('active'));
+      views.forEach(v => v.classList.remove('active'));
+      const navItem = document.querySelector(`.nav-item[data-view="${viewName}"]`);
+      if (navItem) navItem.classList.add('active');
+      document.getElementById(viewName + 'View').classList.add('active');
+    }
+
+    window.enk.getSettings().then(s => {
+      if (s.anthropicKey) settAnthropicKey.value = s.anthropicKey;
+      if (s.niaKey) settNiaKey.value = s.niaKey;
+      settEnabled.checked = s.enabled;
+      settScam.checked = s.scamDetection;
+
+      if (!s.anthropicKey || !s.niaKey) {
+        switchToView('settings');
+        document.getElementById('setupBanner').style.display = 'block';
+      }
+    });
+
+    settSaveBtn.addEventListener('click', async () => {
+      await window.enk.saveSettings({
+        anthropicKey: settAnthropicKey.value.trim(),
+        niaKey: settNiaKey.value.trim(),
+        enabled: settEnabled.checked,
+        scamDetection: settScam.checked,
+        firstLaunch: false,
+      });
+      settSaveStatus.classList.add('visible');
+      setTimeout(() => settSaveStatus.classList.remove('visible'), 2000);
+    });
+
+    // ─── Status updates ───
+    const sidebarDot = document.getElementById('sidebarDot');
+    const sidebarStatus = document.getElementById('sidebarStatus');
+
+    window.enk.onStatusUpdate((status) => {
+      sidebarDot.className = 'status-dot' + (status === 'inactive' ? ' inactive' : '');
+      const labels = { active: 'Active', processing: 'Processing', threat: 'Threat!', inactive: 'Inactive' };
+      sidebarStatus.textContent = labels[status] || status;
+    });
+
+    // ─── Context Graph ──────────────────────────────────────────
+    let graphNetwork = null;
+    let graphNodesDS = null;
+    let graphEdgesDS = null;
+    let graphRawData = null;
+    let selectedNodes = new Set();
+    const activeTypeFilters = new Set(['app','person','topic','content','project','place']);
+    let activeTimeFilter = 0;
+    let searchQuery = '';
+    let verifiedOnly = false;
+
+    const TYPE_COLORS = {
+      app: '#64748b', person: '#3b82f6', topic: '#4ade80',
+      content: '#f97316', place: '#ef4444', project: '#a78bfa',
+    };
+
+    function fmtTime(ts) {
+      return ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '?';
+    }
+    function fmtDuration(ms) {
+      const s = Math.round(ms / 1000);
+      return s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+    }
+
+    function shouldShowNode(n) {
+      if (!activeTypeFilters.has(n._type)) return false;
+      if (activeTimeFilter > 0) {
+        const cutoff = Date.now() - activeTimeFilter * 60 * 1000;
+        if (n._lastSeen < cutoff) return false;
+      }
+      if (searchQuery && !n.label.toLowerCase().includes(searchQuery)) return false;
+      if (verifiedOnly && !n._verified) return false;
+      return true;
+    }
+
+    function applyFilters() {
+      if (!graphNodesDS || !graphEdgesDS || !graphRawData) return;
+      const now = Date.now();
+      graphNodesDS.forEach(n => {
+        const show = shouldShowNode(n);
+        graphNodesDS.update({ id: n.id, hidden: !show });
+      });
+      graphEdgesDS.forEach(e => {
+        const fromNode = graphNodesDS.get(e.from);
+        const toNode = graphNodesDS.get(e.to);
+        const show = fromNode && !fromNode.hidden && toNode && !toNode.hidden;
+        graphEdgesDS.update({ id: e.id, hidden: !show });
+      });
+    }
+
+    let previewDebounce = null;
+    function updateSelectionUI() {
+      const bar = document.getElementById('selectionBar');
+      const countEl = document.getElementById('selectionCount');
+      const previewEl = document.getElementById('selectionPreview');
+      if (selectedNodes.size === 0) {
+        bar.style.display = 'none';
+        return;
+      }
+      bar.style.display = 'block';
+      const labels = Array.from(selectedNodes).map(id => {
+        const n = graphNodesDS?.get(id);
+        return n ? n.label : id;
+      });
+      countEl.innerHTML = `<strong>${selectedNodes.size} selected</strong> — ${labels.map(l => `<span class="selected-node-tag">${l}</span>`).join('')}`;
+      if (previewEl) previewEl.textContent = '...';
+
+      // Highlight selected nodes — strong ring and glow
+      if (graphNodesDS) {
+        graphNodesDS.forEach(n => {
+          const isSelected = selectedNodes.has(n.id);
+          graphNodesDS.update({
+            id: n.id,
+            borderWidth: isSelected ? 5 : 2,
+            shadow: isSelected ? { enabled: true, size: 18, color: 'rgba(59,130,246,0.6)' } : { enabled: false },
+          });
+        });
+      }
+
+      // Debounced group preview
+      if (previewDebounce) clearTimeout(previewDebounce);
+      if (selectedNodes.size >= 2) {
+        previewDebounce = setTimeout(async () => {
+          try {
+            const r = await window.enk.previewGraphGroup(Array.from(selectedNodes));
+            if (previewEl && r.preview) previewEl.textContent = '"' + r.preview + '"';
+          } catch {}
+        }, 350);
+      } else if (previewEl) previewEl.textContent = '';
+    }
+
+    async function refreshUnderstanding() {
+      const content = document.getElementById('understandingContent');
+      const stats = document.getElementById('understandingStats');
+      if (!content) return;
+      try {
+        const u = await window.enk.getUnderstandingPreview();
+        content.textContent = u.knowledge || '(Nothing yet — keep using your computer)';
+        if (stats) stats.textContent = `Based on ${u.activityCount || 0} activity entries, ${u.snapshotCount || 0} screen captures, ${u.entityCount || 0} entities`;
+      } catch {}
+    }
+
+    async function showNodeDetail(nodeId) {
+      const detail = document.getElementById('inspectorDetail');
+      const empty = document.getElementById('inspectorEmpty');
+      const analysis = document.getElementById('inspectorAnalysis');
+      empty.style.display = 'none';
+      analysis.style.display = 'none';
+      detail.style.display = 'block';
+      detail.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Loading...</div>';
+
+      const d = await window.enk.getNodeDetail(nodeId);
+      if (!d) { detail.innerHTML = '<div style="color:var(--text-muted);">Node not found</div>'; return; }
+
+      const color = TYPE_COLORS[d.type] || '#64748b';
+      let html = `<div class="inspector-section">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">${d.label}</div>
+        <span class="inspector-badge" style="background:${color};color:#0f172a;">${d.type}</span>
+        ${d.verified ? '<span style="color:#4ade80;font-size:10px;margin-left:4px;font-weight:500;">&#10003; Verified</span>' : '<span style="color:var(--text-muted);font-size:10px;margin-left:4px;">Unverified</span>'}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+          ${d.mentions} mentions &middot; ${(d.contexts || []).length} context${(d.contexts || []).length !== 1 ? 's' : ''} &middot; since ${fmtTime(d.firstSeen)}
+        </div>
+        ${(d.contexts || []).length > 0 ? '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Seen in: ' + d.contexts.join(', ') + '</div>' : ''}
+      </div>`;
+
+      if (d.connections && d.connections.length > 0) {
+        html += `<div class="inspector-section">
+          <div class="inspector-section-title">Connected To</div>
+          <div style="display:flex;flex-wrap:wrap;">
+            ${d.connections.map(c => `<span class="inspector-connection" data-node-id="${c.id}"><span class="conn-dot" style="background:${TYPE_COLORS[c.type]||'#64748b'}"></span>${c.label} <span style="color:var(--text-muted)">${c.coOccurrences}x</span></span>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      if (d.context.relatedActivity.length > 0) {
+        html += `<div class="inspector-section">
+          <div class="inspector-section-title">Activity Timeline</div>
+          ${d.context.relatedActivity.map(a => `<div class="inspector-activity-item">
+            <strong>${a.app}</strong> &middot; ${fmtTime(a.start)} &middot; ${fmtDuration(a.duration)}<br>
+            <span style="color:var(--text-muted);">${a.title}${a.url ? ' — <span style="color:var(--accent);font-size:10px;">' + a.url.slice(0,60) + '</span>' : ''}</span>
+            ${a.summary ? '<br><span style="color:var(--text-secondary);font-style:italic;">' + a.summary + '</span>' : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      if (d.context.relatedContent.length > 0) {
+        html += `<div class="inspector-section">
+          <div class="inspector-section-title">Screen Context</div>
+          ${d.context.relatedContent.map(c => `<div class="inspector-activity-item">
+            <strong>${c.app}</strong> &middot; ${fmtTime(c.timestamp)}<br>
+            ${c.summary ? '<span style="color:var(--text-secondary);">' + c.summary + '</span>' : '<span style="color:var(--text-muted);font-family:monospace;font-size:10px;">' + c.textPreview + '</span>'}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      if (d.context.relatedClipboard.length > 0) {
+        html += `<div class="inspector-section">
+          <div class="inspector-section-title">Clipboard</div>
+          ${d.context.relatedClipboard.map(c => `<div class="inspector-activity-item">
+            <span style="color:var(--text-muted);">${fmtTime(c.timestamp)} in ${c.app}</span><br>
+            <span style="font-family:monospace;font-size:10px;">${c.text}</span>
+          </div>`).join('')}
+        </div>`;
+      }
+
+      if (d.context.relatedMusic.length > 0) {
+        html += `<div class="inspector-section">
+          <div class="inspector-section-title">Music / Podcasts</div>
+          ${d.context.relatedMusic.map(m => `<div class="inspector-activity-item">"${m.track}" by ${m.artist} <span style="color:var(--text-muted);">(${m.app})</span></div>`).join('')}
+        </div>`;
+      }
+
+      detail.innerHTML = html;
+
+      // Connection click -> navigate to that node
+      detail.querySelectorAll('.inspector-connection').forEach(el => {
+        el.addEventListener('click', () => {
+          const targetId = el.dataset.nodeId;
+          if (graphNetwork && graphNodesDS?.get(targetId)) {
+            graphNetwork.focus(targetId, { scale: 1.2, animation: { duration: 400 } });
+            graphNetwork.selectNodes([targetId]);
+            showNodeDetail(targetId);
+          }
+        });
+      });
+    }
+
+    async function showEdgeDetail(fromId, toId) {
+      const detail = document.getElementById('inspectorDetail');
+      const empty = document.getElementById('inspectorEmpty');
+      const analysis = document.getElementById('inspectorAnalysis');
+      empty.style.display = 'none';
+      analysis.style.display = 'none';
+      detail.style.display = 'block';
+      detail.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Loading...</div>';
+
+      const d = await window.enk.getEdgeDetail(fromId, toId);
+      if (!d) { detail.innerHTML = '<div style="color:var(--text-muted);">Edge not found</div>'; return; }
+
+      const srcColor = TYPE_COLORS[d.source.type] || '#64748b';
+      const tgtColor = TYPE_COLORS[d.target.type] || '#64748b';
+
+      let html = `<div class="inspector-section">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="inspector-badge" style="background:${srcColor};color:#0f172a;">${d.source.label}</span>
+          <span style="color:var(--text-muted);">&#8596;</span>
+          <span class="inspector-badge" style="background:${tgtColor};color:#0f172a;">${d.target.label}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);">
+          Connected <strong>${d.weight}x</strong> — shared activity context or Nia memories
+        </div>
+      </div>`;
+
+      if (d.sharedActivity.length > 0) {
+        html += `<div class="inspector-section">
+          <div class="inspector-section-title">Shared Activity Context</div>
+          ${d.sharedActivity.map(a => `<div class="inspector-activity-item">
+            <strong>${a.app}</strong> &middot; ${fmtTime(a.start)} &middot; ${fmtDuration(a.duration)}<br>
+            <span style="color:var(--text-muted);">${a.title}</span>
+            ${a.summary ? '<br><span style="color:var(--text-secondary);font-style:italic;">' + a.summary + '</span>' : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+
+      detail.innerHTML = html;
+    }
+
+    async function analyzeGroup() {
+      if (selectedNodes.size < 2) return;
+      const analysis = document.getElementById('inspectorAnalysis');
+      const detail = document.getElementById('inspectorDetail');
+      const empty = document.getElementById('inspectorEmpty');
+      empty.style.display = 'none';
+      detail.style.display = 'none';
+      analysis.style.display = 'block';
+      analysis.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Analyzing group with AI...</div>';
+
+      const result = await window.enk.analyzeGraphGroup(Array.from(selectedNodes));
+      if (result.error) {
+        analysis.innerHTML = `<div style="color:var(--red);font-size:12px;">${result.error}</div>`;
+        return;
+      }
+      analysis.innerHTML = `<div class="inspector-section">
+        <div class="inspector-section-title">AI Analysis</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;">${result.analysis}</div>
+      </div>`;
+    }
+
+    async function renderGraph() {
+      const container = document.getElementById('graphContainer');
+      const countEl = document.getElementById('graphNodeCount');
+      const knowledgeEl = document.getElementById('knowledgePreview');
+      const tooltip = document.getElementById('graphTooltip');
+
+      try {
+        const data = await window.enk.getEntityGraph();
+        const knowledge = await window.enk.getLocalKnowledge();
+        graphRawData = data;
+
+        if (knowledgeEl) {
+          knowledgeEl.textContent = knowledge || '(Nothing yet -- keep using your computer)';
+        }
+        refreshUnderstanding();
+
+        if (!data || !data.nodes || data.nodes.length === 0) {
+          container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;">No entities captured yet. Keep using your computer...</div>';
+          if (countEl) countEl.textContent = '';
+          refreshUnderstanding();
+          return;
+        }
+
+        if (countEl) countEl.textContent = `${data.nodes.length} entities, ${data.edges.length} connections`;
+
+        graphNodesDS = new vis.DataSet(data.nodes.map(n => {
+          const baseColor = TYPE_COLORS[n.type] || '#64748b';
+          const opacity = n.verified ? 1 : 0.55;
+          const bg = n.verified ? baseColor : baseColor + '88';
+          return {
+          id: n.id,
+          label: n.verified ? n.label : n.label,
+          value: n.mentions || n.weight,
+          color: {
+            background: bg,
+            border: baseColor,
+            highlight: { background: '#fff', border: baseColor },
+          },
+          font: { color: n.verified ? '#f1f5f9' : '#94a3b8', size: Math.min(10 + (n.mentions || n.weight) * 1.5, 18) },
+          _type: n.type,
+          _mentions: n.mentions || n.weight,
+          _firstSeen: n.firstSeen,
+          _lastSeen: n.lastSeen,
+          _sourceLabel: n.label,
+          _verified: n.verified || false,
+          _contextDiversity: n.contextDiversity || 1,
+          borderWidth: n.verified ? 2 : 1,
+          borderDashes: n.verified ? false : [4, 4],
+          hidden: false,
+        }}));
+
+        graphEdgesDS = new vis.DataSet(data.edges.map((e, i) => ({
+          id: `e${i}`,
+          from: e.source,
+          to: e.target,
+          value: e.weight,
+          _weight: e.weight,
+          _sourceLabel: e.sourceLabel,
+          _targetLabel: e.targetLabel,
+          color: { color: 'rgba(148, 163, 184, 0.25)', highlight: 'rgba(59, 130, 246, 0.6)', hover: 'rgba(148, 163, 184, 0.5)' },
+          smooth: { type: 'continuous' },
+          hoverWidth: 2,
+          hidden: false,
+        })));
+
+        if (graphNetwork) graphNetwork.destroy();
+
+        graphNetwork = new vis.Network(container, { nodes: graphNodesDS, edges: graphEdgesDS }, {
+          physics: {
+            enabled: true,
+            solver: 'barnesHut',
+            barnesHut: {
+              gravitationalConstant: -2000,
+              centralGravity: 0.03,
+              springLength: 150,
+              springConstant: 0.04,
+              damping: 0.06,
+              avoidOverlap: 0.15,
+            },
+            stabilization: { enabled: false },
+            minVelocity: 0.5,
+            maxVelocity: 20,
+          },
+          interaction: {
+            hover: true,
+            tooltipDelay: 0,
+            multiselect: false,
+            selectConnectedEdges: false,
+          },
+          nodes: {
+            shape: 'dot',
+            scaling: { min: 8, max: 28, label: { enabled: true, min: 10, max: 16 } },
+            borderWidth: 2,
+            shadow: false,
+          },
+          edges: {
+            scaling: { min: 1, max: 4 },
+            selectionWidth: 2,
+          },
+        });
+
+        applyFilters();
+
+        // ── Hover tooltips ──
+        let tooltipVisible = false;
+        const canvasEl = document.getElementById('graphCanvas');
+
+        canvasEl.addEventListener('mousemove', (evt) => {
+          if (tooltipVisible) {
+            const rect = canvasEl.getBoundingClientRect();
+            const x = evt.clientX - rect.left + 14;
+            const y = evt.clientY - rect.top + 14;
+            const maxX = rect.width - tooltip.offsetWidth - 8;
+            const maxY = rect.height - tooltip.offsetHeight - 8;
+            tooltip.style.left = Math.min(x, maxX) + 'px';
+            tooltip.style.top = Math.min(y, maxY) + 'px';
+          }
+        });
+
+        graphNetwork.on('hoverNode', (params) => {
+          const n = graphNodesDS.get(params.node);
+          if (!n) return;
+          const color = TYPE_COLORS[n._type] || '#64748b';
+          const verifiedBadge = n._verified ? '<span style="color:#4ade80;font-size:9px;margin-left:3px;">&#10003;</span>' : '';
+          const diversityStr = n._contextDiversity > 1 ? ` &middot; ${n._contextDiversity} contexts` : '';
+          tooltip.innerHTML = `<span style="font-weight:600;">${n.label}</span> <span style="color:${color};font-size:10px;">${n._type}</span>${verifiedBadge}<br><span style="color:var(--text-muted);font-size:11px;">${n._mentions} mentions${diversityStr} &middot; ${fmtTime(n._lastSeen)}</span>`;
+          tooltip.style.display = 'block';
+          tooltipVisible = true;
+        });
+
+        graphNetwork.on('blurNode', () => {
+          tooltip.style.display = 'none';
+          tooltipVisible = false;
+        });
+
+        graphNetwork.on('hoverEdge', (params) => {
+          const e = graphEdgesDS.get(params.edge);
+          if (!e) return;
+          tooltip.innerHTML = `<span style="font-weight:600;">${e._sourceLabel || '?'}</span> <span style="color:var(--text-muted);">&#8596;</span> <span style="font-weight:600;">${e._targetLabel || '?'}</span><br><span style="color:var(--text-muted);font-size:11px;">connected ${e._weight}x</span>`;
+          tooltip.style.display = 'block';
+          tooltipVisible = true;
+        });
+
+        graphNetwork.on('blurEdge', () => {
+          tooltip.style.display = 'none';
+          tooltipVisible = false;
+        });
+
+        // ── Click: node detail or edge detail ──
+        graphNetwork.on('dragEnd', () => {
+          if (graphNetwork && graphNetwork.physics) {
+            try { graphNetwork.physics.physicsBody.simulation.restartSimulation?.(); } catch {}
+          }
+        });
+
+        graphNetwork.on('click', (params) => {
+          const isShift = params.event?.srcEvent?.shiftKey || false;
+
+          if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            if (isShift) {
+              if (selectedNodes.has(nodeId)) selectedNodes.delete(nodeId);
+              else selectedNodes.add(nodeId);
+              updateSelectionUI();
+              graphNetwork.unselectAll();
+              return;
+            }
+            selectedNodes.clear();
+            updateSelectionUI();
+            showNodeDetail(nodeId);
+          } else if (params.edges.length > 0) {
+            const edgeId = params.edges[0];
+            const e = graphEdgesDS.get(edgeId);
+            if (e) showEdgeDetail(e.from, e.to);
+          } else {
+            if (!isShift) {
+              selectedNodes.clear();
+              updateSelectionUI();
+              document.getElementById('inspectorDetail').style.display = 'none';
+              document.getElementById('inspectorAnalysis').style.display = 'none';
+              document.getElementById('inspectorEmpty').style.display = 'block';
+            }
+          }
+        });
+
+      } catch (e) {
+        console.error('Graph render error:', e);
+        container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;">Failed to load graph</div>';
+      }
+    }
+
+    // ── Filter wiring ──
+    document.querySelectorAll('.graph-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const type = chip.dataset.type;
+        chip.classList.toggle('active');
+        if (activeTypeFilters.has(type)) activeTypeFilters.delete(type);
+        else activeTypeFilters.add(type);
+        applyFilters();
+      });
+    });
+
+    document.querySelectorAll('.graph-time-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.graph-time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeTimeFilter = parseInt(btn.dataset.mins) || 0;
+        applyFilters();
+      });
+    });
+
+    document.getElementById('graphSearch').addEventListener('input', (e) => {
+      searchQuery = e.target.value.toLowerCase().trim();
+      applyFilters();
+    });
+
+    document.getElementById('verifiedOnly').addEventListener('change', (e) => {
+      verifiedOnly = e.target.checked;
+      applyFilters();
+    });
+
+    document.getElementById('refreshGraphBtn').addEventListener('click', renderGraph);
+    document.getElementById('analyzeGroupBtn').addEventListener('click', analyzeGroup);
+    document.getElementById('clearSelectionBtn').addEventListener('click', () => {
+      selectedNodes.clear();
+      updateSelectionUI();
+      if (graphNetwork) graphNetwork.unselectAll();
+    });
+  </script>
+</body>
+</html>

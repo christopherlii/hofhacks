@@ -1,21 +1,24 @@
 {
   "name": "enk",
   "version": "1.0.0",
-  "description": "Screen monitoring app that detects scams and dangerous situations",
-  "main": "src/main.js",
+  "description": "Personal memory assistant that tracks computer activity, stores context in Nia, and answers questions about your history",
+  "main": "dist/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev"
+    "build": "tsc",
+    "start": "tsc && electron .",
+    "dev": "tsc && electron . --dev"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
     "electron": "^40.6.0",
     "electron-store": "^11.0.2",
-    "jimp": "^1.6.0",
     "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
   }
 }
