@@ -508,6 +508,26 @@
       line-height: 1.4;
     }
 
+    .text-result {
+      animation: liftIn 220ms ease both;
+    }
+
+    .text-result-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+
+    .text-result-body {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .input-area {
       position: relative;
       z-index: 2;
@@ -702,14 +722,19 @@
       if (actionStatus) {
         actionStatus.style.display = 'block';
         actionStatus.className = 'action-status';
-        actionStatus.textContent = 'Executing action...';
+        actionStatus.textContent = 'Generating response...';
       }
 
       try {
         const result = await window.enk.elephantRunSuggestion(suggestionId);
         if (actionStatus) {
-          actionStatus.className = result && result.ok ? 'action-status ok' : 'action-status err';
-          actionStatus.textContent = result && result.message ? result.message : 'Action failed.';
+          if (result && result.type === 'text') {
+            // Text result is rendered by the elephant-text-result listener below
+            actionStatus.style.display = 'none';
+          } else {
+            actionStatus.className = result && result.ok ? 'action-status ok' : 'action-status err';
+            actionStatus.textContent = result && result.message ? result.message : 'Action failed.';
+          }
         }
       } catch (err) {
         if (actionStatus) {
@@ -998,15 +1023,39 @@
       sendBtn.disabled = true;
     }
 
-    window.enk.onElephantResponse((data) => {
-      if (data && data.mode === 'workflow') {
-        showWorkflowResponse(data);
-        return;
-      }
-      showLegacyResponse(data);
-    });
-    window.enk.onElephantError((message) => showError(message));
-    window.enk.onElephantLoading(() => showLoading());
+    let listenerSet = false;
+
+    if (!listenerSet) {
+      window.enk.onElephantResponse((data) => {
+        if (data && data.mode === 'workflow') {
+          showWorkflowResponse(data);
+          return;
+        }
+        showLegacyResponse(data);
+      });
+      window.enk.onElephantError((message) => showError(message));
+      window.enk.onElephantLoading(() => showLoading());
+      window.enk.onElephantTextResult((data) => {
+        const html = '<div class="group text-result">'
+          + '<div class="text-result-label">' + escapeHtml(data.label) + '</div>'
+          + '<div class="text-result-body">' + escapeHtml(data.text) + '</div>'
+          + '</div>';
+
+        // Insert before the feedback group (last .group)
+        const groups = content.querySelectorAll('.group');
+        const feedbackGroup = groups[groups.length - 1];
+        if (feedbackGroup) {
+          feedbackGroup.insertAdjacentHTML('beforebegin', html);
+        } else {
+          content.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Scroll to the new result
+        const resultEl = content.querySelector('.text-result:last-of-type');
+        if (resultEl) resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+      listenerSet=true;
+    }
   </script>
 </body>
 </html>

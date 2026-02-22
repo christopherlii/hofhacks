@@ -1,4 +1,4 @@
-import { net } from 'electron';
+import { claudeHttpRequest } from '../shared/claude-http';
 
 import type { ClaudeRequestBody, ClaudeResponse, ScamResult } from '../types';
 
@@ -7,47 +7,9 @@ const SCAM_SYSTEM_PROMPT =
 
 function createClaudeApi(getStore: () => any) {
   function claudeRequest(body: ClaudeRequestBody): Promise<ClaudeResponse | null> {
-    return new Promise((resolve) => {
-      const apiKey = getStore()?.get('anthropicKey') as string;
-      if (!apiKey) {
-        resolve(null);
-        return;
-      }
-
-      const request = net.request({ method: 'POST', url: 'https://api.anthropic.com/v1/messages' });
-      request.setHeader('Content-Type', 'application/json');
-      request.setHeader('x-api-key', apiKey);
-      request.setHeader('anthropic-version', '2023-06-01');
-
-      let responseData = '';
-      request.on('response', (response) => {
-        response.on('data', (chunk) => {
-          responseData += chunk.toString();
-        });
-        response.on('end', () => {
-          try {
-            const data = JSON.parse(responseData);
-            if (data.error) {
-              console.error('[Enk] Claude error:', data.error);
-              resolve(null);
-              return;
-            }
-            resolve(data);
-          } catch (e: any) {
-            console.error('[Enk] Claude parse error:', e.message);
-            resolve(null);
-          }
-        });
-      });
-
-      request.on('error', (err: Error) => {
-        console.error('[Enk] Claude request error:', err.message);
-        resolve(null);
-      });
-
-      request.write(JSON.stringify(body));
-      request.end();
-    });
+    const apiKey = getStore()?.get('anthropicKey') as string;
+    if (!apiKey) return Promise.resolve(null);
+    return claudeHttpRequest(apiKey, body as unknown as Record<string, unknown>) as Promise<ClaudeResponse | null>;
   }
 
   async function analyzeForScam(

@@ -1,5 +1,5 @@
-import { captureAllScreens, extractNewContent, OcrEngine, ScreenChangeTracker } from './screen-pipeline';
-import { scrubSensitiveData, textSimilarity } from '../../modules/scrub';
+import { captureAllScreens, extractNewContent, OcrEngine, ScreenChangeTracker } from '../../main/monitoring/screen-pipeline';
+import { scrubSensitiveData, textSimilarity } from '../../shared/scrub';
 
 import type { ClaudeRequestBody, ClaudeResponse, ContentSnapshot, ScamResult } from '../../types';
 

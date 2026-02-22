@@ -14,7 +14,7 @@ import {
 import { initConfigStore } from './platform/store';
 import { AppWindows } from './platform/windows';
 import type { ActivityEntry, ContentSnapshot, ScamResult, Settings } from '../types';
-import * as elephant from '../modules/elephant';
+import * as elephant from '../modules/elephant/elephant';
 import { createAssistantApi } from './assistant/api';
 import { createClaudeApi } from './claude-api';
 import { createFlushToNia } from './nia/flush';
@@ -22,7 +22,7 @@ import { createGraphApi } from './graph/api';
 import { createInsightsApi } from './insights';
 import { createIpcRegistration } from './ipc/setup';
 import { createMonitoringControl } from './monitoring/control';
-import { createMonitoringPipeline } from './monitoring/capture-loop';
+import { createMonitoringPipeline } from '../modules/turtle/turtle';
 
 let store: any;
 
@@ -303,6 +303,19 @@ function startBootstrap(): void {
 
     elephant.init({
       apiKey: () => getStoreApiKey(store),
+      nia,
+      getContext: () => {
+        const latest = contentSnapshots[contentSnapshots.length - 1];
+        console.log('LATEST', latest)
+        return {
+          activeApp: latest?.app ?? currentWindow.app ?? null,
+          windowTitle: latest?.title ?? currentWindow.title ?? null,
+          url: latest?.url ?? currentWindow.url ?? null,
+          visibleText: latest?.fullText ?? latest?.text ?? null,
+          ocrConfidence: latest ? 80 : 0,
+          timestamp: latest?.timestamp ?? Date.now(),
+        };
+      },
     });
     elephant.setupIPC();
     updateElephantShortcut();

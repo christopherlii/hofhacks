@@ -108,6 +108,8 @@ export class NiaClient {
     if (!this.apiKey) throw new Error('Nia API key not set');
     const params: Record<string, unknown> = { q: query, limit: options.limit ?? 20 };
     if (options.tags) params.tags = options.tags;
+    console.log("PARAMS")
+    console.log(params)
     const data = await this._request('GET', '/contexts/semantic-search', null, params);
     return data.contexts || data.results || data || [];
   }
