@@ -29,8 +29,10 @@ let store: any;
 
 const windows = new AppWindows();
 const nia = new NiaClient('');
+// The local OpenClaw gateway's auth token comes from the environment, never
+// the source: set OPENCLAW_GATEWAY_TOKEN before launching Mantle.
 const openClaw = new OpenClawClient({
-  token: '693761285ac2b96f7d2bd08fe059416cb05f7a9b1324b03a'
+  token: process.env.OPENCLAW_GATEWAY_TOKEN || ''
 });
 const ocrEngine = new OcrEngine();
 const screenChangeTracker = new ScreenChangeTracker();

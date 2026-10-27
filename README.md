@@ -89,6 +89,7 @@ Where:
    On first run, Mantle will request:
    - **Screen recording permission** (macOS: System Settings → Privacy & Security → Screen Recording)
    - **API keys** in Settings (Anthropic/Claude, Nia) for chat and context retrieval
+   - For one-click actions, a local OpenClaw gateway, with its token in the environment: `OPENCLAW_GATEWAY_TOKEN=... npm run dev`
 
    Open the chat window (Alt+K or via the menu bar icon) to interact with Mantle.
 
